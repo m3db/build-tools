@@ -1,4 +1,4 @@
-package main
+package testfiles
 
 type sneakyStruct struct {
 	inner map[timeAlias]bool
