@@ -97,7 +97,7 @@ func TestTimeMapLint(t *testing.T) {
 			},
 		)
 	}
-	handleImportPaths([]string{"."}, testCallback)
+	handleImportPaths([]string{"./testfiles"}, testCallback)
 
 	// Make sure all observed errors were expected
 	for file, observedErrs := range observedLintErrors {

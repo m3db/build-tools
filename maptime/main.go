@@ -45,8 +45,18 @@ func handleImportPaths(importPaths []string, callback callbackFunc) {
 
 	for _, pkg := range prog.InitialPackages() {
 		for _, file := range pkg.Files {
-			ast.Walk(astVisitor{fs: fs, types: pkg.Types, callback: callback}, file)
+			ast.Walk(newASTVisitor(fs, pkg.Types, callback), file)
 		}
+	}
+}
+
+func newASTVisitor(fs *token.FileSet, types map[ast.Expr]types.TypeAndValue, callback callbackFunc) astVisitor {
+	return astVisitor{
+		fs:    fs,
+		types: types,
+		callback: func(position token.Position, keyStr, valStr string) {
+			callback(position, path.Base(keyStr), path.Base(valStr))
+		},
 	}
 }
 
@@ -82,7 +92,7 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 			structType.Field(1).Type().String() == "int32" &&
 			structType.Field(2).Name() == "loc" &&
 			structType.Field(2).Type().String() == "*time.Location" {
-			v.callback(position, path.Base(keyStr), valStr)
+			v.callback(position, keyStr, valStr)
 			return nil
 		}
 	}
@@ -90,7 +100,7 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 	// Detects objects with nested time.Time I.E map[{inner: time.Time}]<T>
 	underlyingType := mapType.Key().Underlying().String()
 	if strings.Contains(underlyingType, "time.Time") {
-		v.callback(position, path.Base(keyStr), valStr)
+		v.callback(position, keyStr, valStr)
 		return nil
 	}
 
