@@ -72,14 +72,6 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 		return nil
 	}
 
-	// Detects objects with nested time.Time
-	// TODO: Example
-	underlyingType := mapType.Key().Underlying().String()
-	if strings.Contains(underlyingType, "time.Time") {
-		v.callback(position, keyStr, valStr)
-		return nil
-	}
-
 	// Detects map[timeAlias]<T>
 	structType, ok := mapType.Key().Underlying().(*types.Struct)
 	if ok {
@@ -93,5 +85,13 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 			return nil
 		}
 	}
+
+	// Detects objects with nested time.Time I.E map[{inner: time.Time}]<T>
+	underlyingType := mapType.Key().Underlying().String()
+	if strings.Contains(underlyingType, "time.Time") {
+		v.callback(position, keyStr, valStr)
+		return nil
+	}
+
 	return v
 }
