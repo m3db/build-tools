@@ -1,12 +1,14 @@
 # Maptime
 
-Maptime is a Golang linter that detects usages of map's where the key of the map contains an instance of time.Time.
+Maptime is a Golang linter that detects usages of maps where the key of the map contains an instance of time.Time.
 
-While an intance of time.Time can be safely stored as part of the key of a map, it's very easy to introduce subtle bugs this way and it's often much safer to use something like an int64 to store a unix timestamp at nanosecond resolution instead.
+While an instance of time.Time can be safely stored as part of the key of a map, it's very easy to introduce subtle bugs this way and it's often much safer to use something like an int64 to store a unix timestamp at nanosecond resolution instead.
 
 For detailed information on why storing a time.Time as a map key can be
 dangerous, read [this section](https://golang.org/src/time/time.go?#L101) of
-the golang documentation for the time package
+the golang documentation for the time package.
+
+Note that this issue can be particularly troublesome for projects upgrading to Golang 1.9 because in previous versions of Golang, two instances of time.Time for the same moment of time would only not be == to each other if they represented different timezones, whereas in Golang 1.9 and later they can also not be == to each other if one contains a monotonic bit and the other does not.
 
 ## Gometalinter integration
 
