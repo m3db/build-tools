@@ -86,10 +86,22 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 	// Detects map[timeAlias]<T>
 	structType, ok := mapType.Key().Underlying().(*types.Struct)
 	if ok {
+		// VERSION <= go 1.8.X
 		if structType.Field(0).Name() == "sec" &&
 			structType.Field(0).Type().String() == "int64" &&
 			structType.Field(1).Name() == "nsec" &&
 			structType.Field(1).Type().String() == "int32" &&
+			structType.Field(2).Name() == "loc" &&
+			structType.Field(2).Type().String() == "*time.Location" {
+			v.callback(position, keyStr, valStr)
+			return nil
+		}
+
+		// VERSION >= go 1.9.X
+		if structType.Field(0).Name() == "wall" &&
+			structType.Field(0).Type().String() == "uint64" &&
+			structType.Field(1).Name() == "ext" &&
+			structType.Field(1).Type().String() == "int64" &&
 			structType.Field(2).Name() == "loc" &&
 			structType.Field(2).Type().String() == "*time.Location" {
 			v.callback(position, keyStr, valStr)
