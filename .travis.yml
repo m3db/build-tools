@@ -1,0 +1,10 @@
+language: go
+go:
+  - 1.7.6
+  - 1.8.3
+dist: trusty
+install: make install-ci
+env:
+  matrix:
+    - MAKE_TARGET="test"
+script: "make $MAKE_TARGET"
