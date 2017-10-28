@@ -1,4 +1,4 @@
-package: github.com/m3db/timemaplint
+package: github.com/m3db/build-tools/timemaplint
 import:
 - package: github.com/kisielk/gotool
 - package: github.com/stretchr/testify
