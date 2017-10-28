@@ -10,23 +10,92 @@ import (
 )
 
 func TestTimeMapLint(t *testing.T) {
-	expectedLintErrors := map[string][]int{
-		"test_file_1.go": []int{18, 19},
-		"test_file_2.go": []int{7, 8},
-		"test_file_3.go": []int{5},
-		"test_file_4.go": []int{4},
-		"test_file_5.go": []int{9, 10},
-		"test_file_6.go": []int{7, 8},
+	type lintError struct {
+		lineNumber int
+		keyStr     string
+		valStr     string
 	}
 
-	observedLintErrors := map[string][]int{}
+	expectedLintErrors := map[string][]lintError{
+		"test_file_1.go": []lintError{
+			lintError{
+				lineNumber: 18,
+				keyStr:     "time.Time",
+				valStr:     "bool",
+			},
+			lintError{
+				lineNumber: 19,
+				keyStr:     "time.Time",
+				valStr:     "bool",
+			},
+		},
+		"test_file_2.go": []lintError{
+			lintError{
+				lineNumber: 7,
+				keyStr:     "maptime.timeAlias",
+				valStr:     "bool",
+			},
+			lintError{
+				lineNumber: 8,
+				keyStr:     "maptime.timeAlias",
+				valStr:     "bool",
+			},
+		},
+		"test_file_3.go": []lintError{
+			lintError{
+				lineNumber: 5,
+				keyStr:     "time.Time",
+				valStr:     "bool",
+			},
+		},
+		"test_file_4.go": []lintError{
+			lintError{
+				lineNumber: 4,
+				keyStr:     "maptime.timeAlias",
+				valStr:     "bool",
+			},
+		},
+		"test_file_5.go": []lintError{
+			lintError{
+				lineNumber: 9,
+				keyStr:     "maptime.structWithInnerTime",
+				valStr:     "bool",
+			},
+			lintError{
+				lineNumber: 10,
+				keyStr:     "maptime.structWithInnerTime",
+				valStr:     "bool",
+			},
+		},
+		"test_file_6.go": []lintError{
+			lintError{
+				lineNumber: 7,
+				keyStr:     "maptime.chanTime",
+				valStr:     "bool",
+			},
+			lintError{
+				lineNumber: 8,
+				keyStr:     "maptime.chanTime",
+				valStr:     "bool",
+			},
+		},
+	}
+
+	observedLintErrors := map[string][]lintError{}
 	testCallback := func(position token.Position, keyStr, valStr string) {
 		filePath := position.Filename
 		filePathBase := path.Base(filePath)
 		_, ok := expectedLintErrors[filePathBase]
 		require.True(t, ok, fmt.Sprintf("Failed for file: %s", filePathBase))
 		observedLintErrorsForFile, _ := observedLintErrors[filePathBase]
-		observedLintErrors[filePathBase] = append(observedLintErrorsForFile, position.Line)
+		observedLintErrors[filePathBase] = append(
+			observedLintErrorsForFile,
+			lintError{
+				lineNumber: position.Line,
+				keyStr:     keyStr,
+				valStr:     valStr,
+			},
+		)
 	}
 	handleImportPaths([]string{"."}, testCallback)
 

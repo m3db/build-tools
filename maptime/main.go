@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"path"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
@@ -81,7 +82,7 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 			structType.Field(1).Type().String() == "int32" &&
 			structType.Field(2).Name() == "loc" &&
 			structType.Field(2).Type().String() == "*time.Location" {
-			v.callback(position, keyStr, valStr)
+			v.callback(position, path.Base(keyStr), valStr)
 			return nil
 		}
 	}
@@ -89,7 +90,7 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 	// Detects objects with nested time.Time I.E map[{inner: time.Time}]<T>
 	underlyingType := mapType.Key().Underlying().String()
 	if strings.Contains(underlyingType, "time.Time") {
-		v.callback(position, keyStr, valStr)
+		v.callback(position, path.Base(keyStr), valStr)
 		return nil
 	}
 
