@@ -14,8 +14,6 @@ import (
 	"github.com/kisielk/gotool"
 )
 
-var globalTypes map[ast.Expr]types.TypeAndValue
-
 type callbackFunc func(loc token.Position, keyStr, valStr string)
 
 func main() {
@@ -45,15 +43,15 @@ func handleImportPaths(importPaths []string, callback callbackFunc) {
 	}
 
 	for _, pkg := range prog.InitialPackages() {
-		globalTypes = pkg.Types
 		for _, file := range pkg.Files {
-			ast.Walk(astVisitor{fs: fs, callback: callback}, file)
+			ast.Walk(astVisitor{fs: fs, types: pkg.Types, callback: callback}, file)
 		}
 	}
 }
 
 type astVisitor struct {
 	fs       *token.FileSet
+	types    map[ast.Expr]types.TypeAndValue
 	callback callbackFunc
 }
 
@@ -63,10 +61,10 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 		return v
 	}
 
-	test := globalTypes[mapNode].Type.(*types.Map)
+	mapType := v.types[mapNode].Type.(*types.Map)
 	position := v.fs.Position(mapNode.Map)
-	keyStr := test.Key().String()
-	valStr := test.Elem().String()
+	keyStr := mapType.Key().String()
+	valStr := mapType.Elem().String()
 
 	// Detects map[time.Time]<T>
 	if strings.Contains(keyStr, "time.Time") {
@@ -76,14 +74,14 @@ func (v astVisitor) Visit(node ast.Node) ast.Visitor {
 
 	// Detects objects with nested time.Time
 	// TODO: Example
-	underlyingType := test.Key().Underlying().String()
+	underlyingType := mapType.Key().Underlying().String()
 	if strings.Contains(underlyingType, "time.Time") {
 		v.callback(position, keyStr, valStr)
 		return nil
 	}
 
 	// Detects map[timeAlias]<T>
-	structType, ok := test.Key().Underlying().(*types.Struct)
+	structType, ok := mapType.Key().Underlying().(*types.Struct)
 	if ok {
 		if structType.Field(0).Name() == "sec" &&
 			structType.Field(0).Type().String() == "int64" &&
