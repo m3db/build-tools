@@ -21,6 +21,7 @@ func main() {
 	flag.Parse()
 	importPaths := gotool.ImportPaths(flag.Args())
 	if len(importPaths) == 0 {
+		flag.Usage()
 		return
 	}
 

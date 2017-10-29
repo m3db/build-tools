@@ -32,12 +32,12 @@ func TestTimeMapLint(t *testing.T) {
 		"test_file_2.go": []lintError{
 			lintError{
 				lineNumber: 7,
-				keyStr:     "testfiles.timeAlias",
+				keyStr:     "testdata.timeAlias",
 				valStr:     "bool",
 			},
 			lintError{
 				lineNumber: 8,
-				keyStr:     "testfiles.timeAlias",
+				keyStr:     "testdata.timeAlias",
 				valStr:     "bool",
 			},
 		},
@@ -51,31 +51,31 @@ func TestTimeMapLint(t *testing.T) {
 		"test_file_4.go": []lintError{
 			lintError{
 				lineNumber: 4,
-				keyStr:     "testfiles.timeAlias",
+				keyStr:     "testdata.timeAlias",
 				valStr:     "bool",
 			},
 		},
 		"test_file_5.go": []lintError{
 			lintError{
 				lineNumber: 9,
-				keyStr:     "testfiles.structWithInnerTime",
+				keyStr:     "testdata.structWithInnerTime",
 				valStr:     "bool",
 			},
 			lintError{
 				lineNumber: 10,
-				keyStr:     "testfiles.structWithInnerTime",
+				keyStr:     "testdata.structWithInnerTime",
 				valStr:     "bool",
 			},
 		},
 		"test_file_6.go": []lintError{
 			lintError{
 				lineNumber: 7,
-				keyStr:     "testfiles.chanTime",
+				keyStr:     "testdata.chanTime",
 				valStr:     "bool",
 			},
 			lintError{
 				lineNumber: 8,
-				keyStr:     "testfiles.chanTime",
+				keyStr:     "testdata.chanTime",
 				valStr:     "bool",
 			},
 		},
@@ -97,7 +97,7 @@ func TestTimeMapLint(t *testing.T) {
 			},
 		)
 	}
-	handleImportPaths([]string{"./testfiles"}, testCallback)
+	handleImportPaths([]string{"./testdata"}, testCallback)
 
 	// Make sure all observed errors were expected
 	for file, observedErrs := range observedLintErrors {

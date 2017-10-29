@@ -44,7 +44,7 @@ Note that the maptime package interprets path arguments the same way the standar
 1. Clone this repo into your $GOPATH
 2. [Make sure you have glide installed](https://github.com/Masterminds/glide)
 3. Run glide install
-4. Modify the code, add a new test file to the testfiles directory, and update the testcases in main_test.go
+4. Modify the code, add a new test file to the testdata directory, and update the testcases in main_test.go
 
 ### Running the tests
 
