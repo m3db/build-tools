@@ -1,8 +1,10 @@
 package: github.com/m3db/build-tools/timemaplint
 import:
 - package: github.com/kisielk/gotool
+  version: d6ce6262d87e3a4e153e86023ff56ae771554a41
 - package: github.com/stretchr/testify
   version: v1.1.4
 - package: golang.org/x/tools
+  version: 9b61fcc4c548d69663d915801fc4b42a43b6cd9c
   subpackages:
   - go/loader
