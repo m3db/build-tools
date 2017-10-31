@@ -43,7 +43,7 @@ To view optional flags, run:
 maptime -h
 ```
 
-Note that the maptime package interprets path arguments the same way the standard Go toolchain does.
+Note that the maptime package interprets path arguments and build tags the same way the standard Go toolchain does.
 
 ## Development
 
