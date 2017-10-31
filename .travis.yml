@@ -7,5 +7,5 @@ dist: trusty
 install: make install
 env:
   matrix:
-    - MAKE_TARGET="test"
+    - MAKE_TARGET="test-ci-unit"
 script: "make $MAKE_TARGET"
