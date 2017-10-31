@@ -33,8 +33,14 @@ go get https://github.com/m3db/build-tools/linters/maptime
 
 ## Usage
 
-```golang
+```bash
 maptime ./...
+```
+
+To view optional flags, run:
+
+```bash
+maptime -h
 ```
 
 Note that the maptime package interprets path arguments the same way the standard Go toolchain does.

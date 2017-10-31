@@ -20,7 +20,7 @@ type callbackFunc func(loc token.Position, keyStr, valStr string)
 
 func main() {
 	tags := flag.String("tags", "", "List of build tags to take into account when linting.")
-	skipVendor := flag.Bool("skip-vendor", true, "Skip vendor directors, enabled by default.")
+	skipVendor := flag.Bool("skip-vendor", true, "Skip vendor directors.")
 
 	flag.Parse()
 	importPaths := gotool.ImportPaths(flag.Args())
