@@ -79,6 +79,18 @@ func TestTimeMapLint(t *testing.T) {
 				valStr:     "bool",
 			},
 		},
+		"test_file_7.go": []lintError{
+			lintError{
+				lineNumber: 8,
+				keyStr:     "time.Time",
+				valStr:     "bool",
+			},
+			lintError{
+				lineNumber: 9,
+				keyStr:     "time.Time",
+				valStr:     "bool",
+			},
+		},
 	}
 
 	observedLintErrors := map[string][]lintError{}
@@ -97,7 +109,7 @@ func TestTimeMapLint(t *testing.T) {
 			},
 		)
 	}
-	handleImportPaths([]string{"./testdata"}, testCallback)
+	handleImportPaths([]string{"./testdata"}, []string{"included"}, testCallback)
 
 	// Make sure all observed errors were expected
 	for file, observedErrs := range observedLintErrors {

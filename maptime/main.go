@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/token"
 	"go/types"
 	"log"
@@ -18,6 +19,9 @@ import (
 type callbackFunc func(loc token.Position, keyStr, valStr string)
 
 func main() {
+	tags := flag.String("tags", "", "List of build tags to take into account when linting.")
+	skipVendor := flag.Bool("skip-vendor", true, "Skip vendor directors, enabled by default.")
+
 	flag.Parse()
 	importPaths := gotool.ImportPaths(flag.Args())
 	if len(importPaths) == 0 {
@@ -25,15 +29,43 @@ func main() {
 		return
 	}
 
-	handleImportPaths(importPaths, func(position token.Position, keyStr, valStr string) {
-		fmt.Printf("%s: Reconsider use of map[%s]%s . Storing an instance of time.Time as part of a map key is not recommended.\n", position.String(), keyStr, valStr)
+	var filteredPaths []string
+	if *skipVendor {
+		filteredPaths = filterOutVendor(importPaths)
+	} else {
+		filteredPaths = importPaths
+	}
+
+	handleImportPaths(filteredPaths, strings.Fields(*tags), func(position token.Position, keyStr, valStr string) {
+		fmt.Printf(
+			"%s: Reconsider use of map[%s]%s . Storing an instance of time.Time as part of a map key is not recommended.\n",
+			position.String(),
+			keyStr,
+			valStr,
+		)
 	})
 }
 
-func handleImportPaths(importPaths []string, callback callbackFunc) {
+func filterOutVendor(importPaths []string) []string {
+	filteredStrings := []string{}
+	for _, importPath := range importPaths {
+		if !strings.Contains(importPath, "/vendor/") {
+			filteredStrings = append(filteredStrings, importPath)
+		}
+	}
+	return filteredStrings
+}
+
+func handleImportPaths(importPaths []string, buildTags []string, callback callbackFunc) {
 	fs := token.NewFileSet()
-	var conf loader.Config
-	conf.Fset = fs
+
+	ctx := build.Default
+	ctx.BuildTags = buildTags
+
+	conf := loader.Config{
+		Fset:  fs,
+		Build: &ctx,
+	}
 
 	for _, importPath := range importPaths {
 		conf.Import(importPath)
@@ -46,13 +78,13 @@ func handleImportPaths(importPaths []string, callback callbackFunc) {
 
 	for _, pkg := range prog.InitialPackages() {
 		for _, file := range pkg.Files {
-			ast.Walk(newASTVisitor(fs, pkg.Types, callback), file)
+			ast.Walk(newMapVisitor(fs, pkg.Types, callback), file)
 		}
 	}
 }
 
-func newASTVisitor(fs *token.FileSet, types map[ast.Expr]types.TypeAndValue, callback callbackFunc) astVisitor {
-	return astVisitor{
+func newMapVisitor(fs *token.FileSet, types map[ast.Expr]types.TypeAndValue, callback callbackFunc) mapVisitor {
+	return mapVisitor{
 		fs:    fs,
 		types: types,
 		callback: func(position token.Position, keyStr, valStr string) {
@@ -61,13 +93,13 @@ func newASTVisitor(fs *token.FileSet, types map[ast.Expr]types.TypeAndValue, cal
 	}
 }
 
-type astVisitor struct {
+type mapVisitor struct {
 	fs       *token.FileSet
 	types    map[ast.Expr]types.TypeAndValue
 	callback callbackFunc
 }
 
-func (v astVisitor) Visit(node ast.Node) ast.Visitor {
+func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
 	mapNode, ok := node.(*ast.MapType)
 	if !ok {
 		return v
