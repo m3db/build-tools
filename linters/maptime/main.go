@@ -118,7 +118,7 @@ func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
 
 	// Detects map[timeAlias]<T>
 	structType, ok := mapType.Key().Underlying().(*types.Struct)
-	if ok {
+	if ok && structType.NumFields() == 3 {
 		// VERSION <= go 1.8.X
 		if structType.Field(0).Name() == "sec" &&
 			structType.Field(0).Type().String() == "int64" &&
