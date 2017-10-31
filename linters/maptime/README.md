@@ -28,7 +28,7 @@ Example:
 ## Installation
 
 ```bash
-go get https://github.com/m3db/build-tools/linters/maptime
+go get -u https://github.com/m3db/build-tools/linters/maptime
 ```
 
 ## Usage
