@@ -1,0 +1,27 @@
+hash: b71707f4b0eb83353d3c3e0760fc6c161aa4172fd62a604dd04d7ce8d2019f2f
+updated: 2017-10-28T00:51:26.004329852-04:00
+imports:
+- name: github.com/kisielk/gotool
+  version: d6ce6262d87e3a4e153e86023ff56ae771554a41
+  subpackages:
+  - internal/load
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+  - require
+- name: golang.org/x/tools
+  version: 9b61fcc4c548d69663d915801fc4b42a43b6cd9c
+  subpackages:
+  - go/ast/astutil
+  - go/buildutil
+  - go/loader
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
