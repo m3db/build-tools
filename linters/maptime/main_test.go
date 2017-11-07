@@ -39,74 +39,86 @@ func TestTimeMapLint(t *testing.T) {
 	expectedLintErrors := map[string][]lintError{
 		"test_file_1.go": []lintError{
 			lintError{
-				lineNumber: 18,
+				lineNumber: 38,
 				keyStr:     "time.Time",
 				valStr:     "bool",
 			},
 			lintError{
-				lineNumber: 19,
+				lineNumber: 39,
 				keyStr:     "time.Time",
 				valStr:     "bool",
 			},
 		},
 		"test_file_2.go": []lintError{
 			lintError{
-				lineNumber: 7,
+				lineNumber: 27,
 				keyStr:     "testdata.timeAlias",
 				valStr:     "bool",
 			},
 			lintError{
-				lineNumber: 8,
+				lineNumber: 28,
 				keyStr:     "testdata.timeAlias",
 				valStr:     "bool",
 			},
 		},
 		"test_file_3.go": []lintError{
 			lintError{
-				lineNumber: 5,
+				lineNumber: 25,
 				keyStr:     "time.Time",
 				valStr:     "bool",
 			},
 		},
 		"test_file_4.go": []lintError{
 			lintError{
-				lineNumber: 4,
+				lineNumber: 24,
 				keyStr:     "testdata.timeAlias",
 				valStr:     "bool",
 			},
 		},
 		"test_file_5.go": []lintError{
 			lintError{
-				lineNumber: 9,
+				lineNumber: 29,
 				keyStr:     "testdata.structWithInnerTime",
 				valStr:     "bool",
 			},
 			lintError{
-				lineNumber: 10,
+				lineNumber: 30,
 				keyStr:     "testdata.structWithInnerTime",
 				valStr:     "bool",
 			},
 		},
 		"test_file_6.go": []lintError{
 			lintError{
-				lineNumber: 7,
+				lineNumber: 27,
 				keyStr:     "testdata.chanTime",
 				valStr:     "bool",
 			},
 			lintError{
-				lineNumber: 8,
+				lineNumber: 28,
 				keyStr:     "testdata.chanTime",
 				valStr:     "bool",
 			},
 		},
 		"test_file_7.go": []lintError{
 			lintError{
-				lineNumber: 8,
+				lineNumber: 27,
 				keyStr:     "time.Time",
 				valStr:     "bool",
 			},
 			lintError{
-				lineNumber: 9,
+				lineNumber: 28,
+				keyStr:     "time.Time",
+				valStr:     "bool",
+			},
+		},
+		"test_file_10_test.go": []lintError{
+			lintError{
+				lineNumber: 26,
+				keyStr:     "time.Time",
+				valStr:     "bool",
+			},
+			lintError{
+				lineNumber: 27,
 				keyStr:     "time.Time",
 				valStr:     "bool",
 			},
