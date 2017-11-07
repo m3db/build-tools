@@ -88,7 +88,7 @@ func handleImportPaths(importPaths []string, buildTags []string, callback callba
 	}
 
 	for _, importPath := range importPaths {
-		conf.Import(importPath)
+		conf.ImportWithTests(importPath)
 	}
 
 	prog, err := conf.Load()
