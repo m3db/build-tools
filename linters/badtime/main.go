@@ -212,7 +212,7 @@ func printMapKeyError(position token.Position, keyStr, valStr string) {
 
 func printEqualityError(position token.Position, xStr, yStr string) {
 	fmt.Printf(
-		"%s: Considering using .Equal() method instead of == when comparing %s and %s.\n",
+		"%s: %s and %s contain time.Time which can be dangerous to compare with `==`. Consider writing a custom comparison or using the .Equal() method of time.Time.\n",
 		position.String(),
 		xStr,
 		yStr,
