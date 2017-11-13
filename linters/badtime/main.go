@@ -107,7 +107,7 @@ func handleImportPaths(
 
 	for _, pkg := range prog.InitialPackages() {
 		for _, file := range pkg.Files {
-			ast.Walk(mapVisitor{
+			ast.Walk(nodeVisitor{
 				fs:               fs,
 				types:            pkg.Types,
 				mapCallback:      mapCallback,
@@ -117,14 +117,14 @@ func handleImportPaths(
 	}
 }
 
-type mapVisitor struct {
+type nodeVisitor struct {
 	fs               *token.FileSet
 	types            map[ast.Expr]types.TypeAndValue
 	mapCallback      mapCallbackFunc
 	equalityCallback equalityCallbackFunc
 }
 
-func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
+func (v nodeVisitor) Visit(node ast.Node) ast.Visitor {
 	// Detect time.Time == time.Time
 	binary, ok := node.(*ast.BinaryExpr)
 	if ok && v.equalityCallback != nil {
