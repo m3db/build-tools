@@ -22,11 +22,7 @@ package testdata
 
 import "time"
 
-type iface interface {
-	SomeMethodWithTime(t time.Time) bool
-}
-
-// Make sure it doesn't detect interfaces with a time.Time in a method signature
-func test6(x, y iface) bool {
-	return x == y
+// Make sure it ignores pointers to time.Time
+func test13() bool {
+	return &time.Time{} == &time.Time{}
 }
