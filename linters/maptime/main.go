@@ -28,7 +28,6 @@ import (
 	"go/token"
 	"go/types"
 	"log"
-	"path"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
@@ -36,7 +35,8 @@ import (
 	"github.com/kisielk/gotool"
 )
 
-type callbackFunc func(loc token.Position, keyStr, valStr string)
+type mapCallbackFunc func(loc token.Position, keyStr, valStr string)
+type comparisonCallbackFunc func(loc token.Position, xStr, yStr string)
 
 func main() {
 	tags := flag.String("tags", "", "List of build tags to take into account when linting.")
@@ -63,7 +63,7 @@ func main() {
 			keyStr,
 			valStr,
 		)
-	})
+	}, nil)
 }
 
 func filterOutVendor(importPaths []string) []string {
@@ -76,7 +76,12 @@ func filterOutVendor(importPaths []string) []string {
 	return filteredStrings
 }
 
-func handleImportPaths(importPaths []string, buildTags []string, callback callbackFunc) {
+func handleImportPaths(
+	importPaths []string,
+	buildTags []string,
+	mapCallback mapCallbackFunc,
+	comparisonCallback comparisonCallbackFunc,
+) {
 	fs := token.NewFileSet()
 
 	ctx := build.Default
@@ -98,46 +103,64 @@ func handleImportPaths(importPaths []string, buildTags []string, callback callba
 
 	for _, pkg := range prog.InitialPackages() {
 		for _, file := range pkg.Files {
-			ast.Walk(newMapVisitor(fs, pkg.Types, callback), file)
+			ast.Walk(mapVisitor{
+				fs:                 fs,
+				types:              pkg.Types,
+				mapCallback:        mapCallback,
+				comparisonCallback: comparisonCallback,
+			}, file)
 		}
 	}
 }
 
-func newMapVisitor(fs *token.FileSet, types map[ast.Expr]types.TypeAndValue, callback callbackFunc) mapVisitor {
-	return mapVisitor{
-		fs:    fs,
-		types: types,
-		callback: func(position token.Position, keyStr, valStr string) {
-			callback(position, path.Base(keyStr), path.Base(valStr))
-		},
-	}
-}
-
 type mapVisitor struct {
-	fs       *token.FileSet
-	types    map[ast.Expr]types.TypeAndValue
-	callback callbackFunc
+	fs                 *token.FileSet
+	types              map[ast.Expr]types.TypeAndValue
+	mapCallback        mapCallbackFunc
+	comparisonCallback comparisonCallbackFunc
 }
 
 func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
-	mapNode, ok := node.(*ast.MapType)
-	if !ok {
-		return v
-	}
-
-	mapType := v.types[mapNode].Type.(*types.Map)
-	position := v.fs.Position(mapNode.Map)
-	keyStr := mapType.Key().String()
-	valStr := mapType.Elem().String()
-
-	// Detects map[time.Time]<T>
-	if strings.Contains(keyStr, "time.Time") {
-		v.callback(position, keyStr, valStr)
+	binary, ok := node.(*ast.BinaryExpr)
+	if ok {
+		xType := v.types[binary.X].Type
+		yType := v.types[binary.Y].Type
+		if isTimeOrContainsTime(xType) && isTimeOrContainsTime(yType) {
+			v.comparisonCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
+		}
 		return nil
 	}
 
+	mapNode, ok := node.(*ast.MapType)
+	if ok {
+		mapType := v.types[mapNode].Type.(*types.Map)
+		position := v.fs.Position(mapNode.Map)
+		keyStr := mapType.Key().String()
+		valStr := mapType.Elem().String()
+
+		containsTime := isTimeOrContainsTime(mapType.Key())
+		if containsTime {
+			v.mapCallback(position, keyStr, valStr)
+			return nil
+		}
+	}
+
+	return v
+}
+
+// isTypeOrContainsTime returns whether the type x represents an instance of
+// time.Time or contains a nested time.Time
+func isTimeOrContainsTime(x types.Type) bool {
+	typeStr := x.String()
+	typeUnderlying := x.Underlying()
+
+	// Detects map[time.Time]<T>
+	if strings.Contains(typeStr, "time.Time") {
+		return true
+	}
+
 	// Detects map[timeAlias]<T>
-	structType, ok := mapType.Key().Underlying().(*types.Struct)
+	structType, ok := typeUnderlying.(*types.Struct)
 	if ok && structType.NumFields() == 3 {
 		// VERSION <= go 1.8.X
 		if structType.Field(0).Name() == "sec" &&
@@ -146,8 +169,7 @@ func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
 			structType.Field(1).Type().String() == "int32" &&
 			structType.Field(2).Name() == "loc" &&
 			structType.Field(2).Type().String() == "*time.Location" {
-			v.callback(position, keyStr, valStr)
-			return nil
+			return true
 		}
 
 		// VERSION >= go 1.9.X
@@ -157,17 +179,14 @@ func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
 			structType.Field(1).Type().String() == "int64" &&
 			structType.Field(2).Name() == "loc" &&
 			structType.Field(2).Type().String() == "*time.Location" {
-			v.callback(position, keyStr, valStr)
-			return nil
+			return true
 		}
 	}
 
 	// Detects objects with nested time.Time I.E map[{inner: time.Time}]<T>
-	underlyingType := mapType.Key().Underlying().String()
-	if strings.Contains(underlyingType, "time.Time") {
-		v.callback(position, keyStr, valStr)
-		return nil
+	if strings.Contains(typeUnderlying.String(), "time.Time") {
+		return true
 	}
 
-	return v
+	return false
 }

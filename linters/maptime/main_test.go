@@ -34,6 +34,8 @@ func TestTimeMapLint(t *testing.T) {
 		lineNumber int
 		keyStr     string
 		valStr     string
+		xStr       string
+		yStr       string
 	}
 
 	expectedLintErrors := map[string][]lintError{
@@ -52,12 +54,12 @@ func TestTimeMapLint(t *testing.T) {
 		"test_file_2.go": []lintError{
 			lintError{
 				lineNumber: 27,
-				keyStr:     "testdata.timeAlias",
+				keyStr:     "./testdata.timeAlias",
 				valStr:     "bool",
 			},
 			lintError{
 				lineNumber: 28,
-				keyStr:     "testdata.timeAlias",
+				keyStr:     "./testdata.timeAlias",
 				valStr:     "bool",
 			},
 		},
@@ -71,31 +73,31 @@ func TestTimeMapLint(t *testing.T) {
 		"test_file_4.go": []lintError{
 			lintError{
 				lineNumber: 24,
-				keyStr:     "testdata.timeAlias",
+				keyStr:     "./testdata.timeAlias",
 				valStr:     "bool",
 			},
 		},
 		"test_file_5.go": []lintError{
 			lintError{
 				lineNumber: 29,
-				keyStr:     "testdata.structWithInnerTime",
+				keyStr:     "./testdata.structWithInnerTime",
 				valStr:     "bool",
 			},
 			lintError{
 				lineNumber: 30,
-				keyStr:     "testdata.structWithInnerTime",
+				keyStr:     "./testdata.structWithInnerTime",
 				valStr:     "bool",
 			},
 		},
 		"test_file_6.go": []lintError{
 			lintError{
 				lineNumber: 27,
-				keyStr:     "testdata.chanTime",
+				keyStr:     "./testdata.chanTime",
 				valStr:     "bool",
 			},
 			lintError{
 				lineNumber: 28,
-				keyStr:     "testdata.chanTime",
+				keyStr:     "./testdata.chanTime",
 				valStr:     "bool",
 			},
 		},
@@ -123,10 +125,24 @@ func TestTimeMapLint(t *testing.T) {
 				valStr:     "bool",
 			},
 		},
+		"test_file_11.go": []lintError{
+			lintError{
+				lineNumber: 26,
+				xStr:       "time.Time",
+				yStr:       "time.Time",
+			},
+		},
+		"test_file_12.go": []lintError{
+			lintError{
+				lineNumber: 24,
+				xStr:       "./testdata.structWithInnerTime",
+				yStr:       "./testdata.structWithInnerTime",
+			},
+		},
 	}
 
 	observedLintErrors := map[string][]lintError{}
-	testCallback := func(position token.Position, keyStr, valStr string) {
+	testMapCallback := func(position token.Position, keyStr, valStr string) {
 		filePath := position.Filename
 		filePathBase := path.Base(filePath)
 		_, ok := expectedLintErrors[filePathBase]
@@ -141,7 +157,27 @@ func TestTimeMapLint(t *testing.T) {
 			},
 		)
 	}
-	handleImportPaths([]string{"./testdata"}, []string{"included"}, testCallback)
+	testComparisonCallback := func(position token.Position, xStr, yStr string) {
+		filePath := position.Filename
+		filePathBase := path.Base(filePath)
+		_, ok := expectedLintErrors[filePathBase]
+		require.True(t, ok, fmt.Sprintf("Failed for file: %s", filePathBase))
+		observedLintErrorsForFile, _ := observedLintErrors[filePathBase]
+		observedLintErrors[filePathBase] = append(
+			observedLintErrorsForFile,
+			lintError{
+				lineNumber: position.Line,
+				xStr:       xStr,
+				yStr:       yStr,
+			},
+		)
+	}
+	handleImportPaths(
+		[]string{"./testdata"},
+		[]string{"included"},
+		testMapCallback,
+		testComparisonCallback,
+	)
 
 	// Make sure all observed errors were expected
 	for file, observedErrs := range observedLintErrors {
