@@ -36,7 +36,7 @@ import (
 )
 
 type mapCallbackFunc func(loc token.Position, keyStr, valStr string)
-type comparisonCallbackFunc func(loc token.Position, xStr, yStr string)
+type doubleEqualCallbackFunc func(loc token.Position, xStr, yStr string)
 
 func main() {
 	tags := flag.String("tags", "", "List of build tags to take into account when linting.")
@@ -62,12 +62,12 @@ func main() {
 	if *skipMap {
 		mapKeyCallback = nil
 	}
-	comparisonCallback := printComparisonError
+	doubleEqualCallback := printComparisonError
 	if !*skipCompare {
-		comparisonCallback = nil
+		doubleEqualCallback = nil
 	}
 
-	handleImportPaths(filteredPaths, strings.Fields(*tags), mapKeyCallback, comparisonCallback)
+	handleImportPaths(filteredPaths, strings.Fields(*tags), mapKeyCallback, doubleEqualCallback)
 }
 
 func filterOutVendor(importPaths []string) []string {
@@ -84,7 +84,7 @@ func handleImportPaths(
 	importPaths []string,
 	buildTags []string,
 	mapCallback mapCallbackFunc,
-	comparisonCallback comparisonCallbackFunc,
+	doubleEqualCallback doubleEqualCallbackFunc,
 ) {
 	fs := token.NewFileSet()
 
@@ -108,30 +108,30 @@ func handleImportPaths(
 	for _, pkg := range prog.InitialPackages() {
 		for _, file := range pkg.Files {
 			ast.Walk(mapVisitor{
-				fs:                 fs,
-				types:              pkg.Types,
-				mapCallback:        mapCallback,
-				comparisonCallback: comparisonCallback,
+				fs:                  fs,
+				types:               pkg.Types,
+				mapCallback:         mapCallback,
+				doubleEqualCallback: doubleEqualCallback,
 			}, file)
 		}
 	}
 }
 
 type mapVisitor struct {
-	fs                 *token.FileSet
-	types              map[ast.Expr]types.TypeAndValue
-	mapCallback        mapCallbackFunc
-	comparisonCallback comparisonCallbackFunc
+	fs                  *token.FileSet
+	types               map[ast.Expr]types.TypeAndValue
+	mapCallback         mapCallbackFunc
+	doubleEqualCallback doubleEqualCallbackFunc
 }
 
 func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
 	// Detect time.Time == time.Time
 	binary, ok := node.(*ast.BinaryExpr)
-	if ok && v.comparisonCallback != nil {
+	if ok && v.doubleEqualCallback != nil {
 		xType := v.types[binary.X].Type
 		yType := v.types[binary.Y].Type
 		if isTimeOrContainsTime(xType) && isTimeOrContainsTime(yType) && binary.Op == token.EQL {
-			v.comparisonCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
+			v.doubleEqualCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
 		}
 		return nil
 	}
