@@ -4,7 +4,7 @@ coverfile         := cover.out
 test              := .ci/test-cover.sh
 
 install: install-glide
-	( cd linters/maptime ; glide install -v)
+	( cd linters/badtime ; glide install -v)
 
 test-internal:
 	@which go-junit-report > /dev/null || go get -u github.com/sectioneight/go-junit-report
