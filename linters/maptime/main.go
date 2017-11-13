@@ -41,6 +41,8 @@ type comparisonCallbackFunc func(loc token.Position, xStr, yStr string)
 func main() {
 	tags := flag.String("tags", "", "List of build tags to take into account when linting.")
 	skipVendor := flag.Bool("skip-vendor", true, "Skip vendor directors.")
+	skipMap := flag.Bool("skip-map", false, "Skip checking for map[time.Time]<T>")
+	skipCompare := flag.Bool("skip-compare", false, "Skip checking for time.Time == time.Time")
 
 	flag.Parse()
 	importPaths := gotool.ImportPaths(flag.Args())
@@ -56,14 +58,16 @@ func main() {
 		filteredPaths = importPaths
 	}
 
-	handleImportPaths(filteredPaths, strings.Fields(*tags), func(position token.Position, keyStr, valStr string) {
-		fmt.Printf(
-			"%s: Reconsider use of map[%s]%s . Storing an instance of time.Time as part of a map key is not recommended.\n",
-			position.String(),
-			keyStr,
-			valStr,
-		)
-	}, nil)
+	mapKeyCallback := printMapKeyError
+	if *skipMap {
+		mapKeyCallback = nil
+	}
+	comparisonCallback := printComparisonError
+	if !*skipCompare {
+		comparisonCallback = nil
+	}
+
+	handleImportPaths(filteredPaths, strings.Fields(*tags), mapKeyCallback, comparisonCallback)
 }
 
 func filterOutVendor(importPaths []string) []string {
@@ -122,7 +126,7 @@ type mapVisitor struct {
 
 func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
 	binary, ok := node.(*ast.BinaryExpr)
-	if ok {
+	if ok && v.comparisonCallback != nil {
 		xType := v.types[binary.X].Type
 		yType := v.types[binary.Y].Type
 		if isTimeOrContainsTime(xType) && isTimeOrContainsTime(yType) {
@@ -132,7 +136,7 @@ func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
 	}
 
 	mapNode, ok := node.(*ast.MapType)
-	if ok {
+	if ok && v.mapCallback != nil {
 		mapType := v.types[mapNode].Type.(*types.Map)
 		position := v.fs.Position(mapNode.Map)
 		keyStr := mapType.Key().String()
@@ -189,4 +193,22 @@ func isTimeOrContainsTime(x types.Type) bool {
 	}
 
 	return false
+}
+
+func printMapKeyError(position token.Position, keyStr, valStr string) {
+	fmt.Printf(
+		"%s: Reconsider use of map[%s]%s . Storing an instance of time.Time as part of a map key is not recommended.\n",
+		position.String(),
+		keyStr,
+		valStr,
+	)
+}
+
+func printComparisonError(position token.Position, xStr, yStr string) {
+	fmt.Printf(
+		"%s: Considering using .Equal() method instead of == when comparing %s and %s.\n",
+		position.String(),
+		xStr,
+		yStr,
+	)
 }
