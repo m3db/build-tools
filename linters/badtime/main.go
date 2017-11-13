@@ -63,7 +63,7 @@ func main() {
 		mapKeyCallback = nil
 	}
 	equalityCallback := printEqualityError
-	if !*skipEquality {
+	if *skipEquality {
 		equalityCallback = nil
 	}
 
