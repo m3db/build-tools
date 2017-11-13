@@ -154,7 +154,7 @@ func (v nodeVisitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-// isTypeOrContainsTime returns whether the type x represents an instance of
+// isTimeOrContainsTime returns whether the type x represents an instance of
 // time.Time or contains a nested time.Time
 func isTimeOrContainsTime(x types.Type) bool {
 	typeUnderlying := x.Underlying()
