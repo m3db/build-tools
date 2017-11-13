@@ -42,7 +42,7 @@ func main() {
 	tags := flag.String("tags", "", "List of build tags to take into account when linting.")
 	skipVendor := flag.Bool("skip-vendor", true, "Skip vendor directors.")
 	skipMap := flag.Bool("skip-map", false, "Skip checking for map[time.Time]<T>")
-	skipEquality := flag.Bool("skip-compare", false, "Skip checking for time.Time == time.Time")
+	skipEquality := flag.Bool("skip-equality", false, "Skip checking for time.Time == time.Time")
 
 	flag.Parse()
 	importPaths := gotool.ImportPaths(flag.Args())
