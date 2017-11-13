@@ -154,12 +154,16 @@ func (v nodeVisitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-// isTypeOrContainsTime returns whether the type x represents an instance of
+// isTimeOrContainsTime returns whether the type x represents an instance of
 // time.Time or contains a nested time.Time
 func isTimeOrContainsTime(x types.Type) bool {
-	typeStr := x.String()
 	typeUnderlying := x.Underlying()
+	_, ok := typeUnderlying.(*types.Struct)
+	if !ok {
+		return false
+	}
 
+	typeStr := x.String()
 	// Detects map[time.Time]<T>
 	if strings.Contains(typeStr, "time.Time") {
 		return true
@@ -208,7 +212,7 @@ func printMapKeyError(position token.Position, keyStr, valStr string) {
 
 func printEqualityError(position token.Position, xStr, yStr string) {
 	fmt.Printf(
-		"%s: Considering using .Equal() method instead of == when comparing %s and %s.\n",
+		"%s: %s and %s contain time.Time which can be dangerous to compare with `==`. Consider writing a custom comparison or using the .Equal() method of time.Time.\n",
 		position.String(),
 		xStr,
 		yStr,
