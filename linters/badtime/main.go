@@ -125,16 +125,18 @@ type mapVisitor struct {
 }
 
 func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
+	// Detect time.Time == time.Time
 	binary, ok := node.(*ast.BinaryExpr)
 	if ok && v.comparisonCallback != nil {
 		xType := v.types[binary.X].Type
 		yType := v.types[binary.Y].Type
-		if isTimeOrContainsTime(xType) && isTimeOrContainsTime(yType) {
+		if isTimeOrContainsTime(xType) && isTimeOrContainsTime(yType) && binary.Op == token.EQL {
 			v.comparisonCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
 		}
 		return nil
 	}
 
+	// Detect map[time.Time]<T>
 	mapNode, ok := node.(*ast.MapType)
 	if ok && v.mapCallback != nil {
 		mapType := v.types[mapNode].Type.(*types.Map)
