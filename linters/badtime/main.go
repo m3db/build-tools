@@ -36,13 +36,13 @@ import (
 )
 
 type mapCallbackFunc func(loc token.Position, keyStr, valStr string)
-type doubleEqualCallbackFunc func(loc token.Position, xStr, yStr string)
+type equalityCallbackFunc func(loc token.Position, xStr, yStr string)
 
 func main() {
 	tags := flag.String("tags", "", "List of build tags to take into account when linting.")
 	skipVendor := flag.Bool("skip-vendor", true, "Skip vendor directors.")
 	skipMap := flag.Bool("skip-map", false, "Skip checking for map[time.Time]<T>")
-	skipCompare := flag.Bool("skip-compare", false, "Skip checking for time.Time == time.Time")
+	skipEquality := flag.Bool("skip-compare", false, "Skip checking for time.Time == time.Time")
 
 	flag.Parse()
 	importPaths := gotool.ImportPaths(flag.Args())
@@ -62,12 +62,12 @@ func main() {
 	if *skipMap {
 		mapKeyCallback = nil
 	}
-	doubleEqualCallback := printComparisonError
-	if !*skipCompare {
-		doubleEqualCallback = nil
+	equalityCallback := printComparisonError
+	if !*skipEquality {
+		equalityCallback = nil
 	}
 
-	handleImportPaths(filteredPaths, strings.Fields(*tags), mapKeyCallback, doubleEqualCallback)
+	handleImportPaths(filteredPaths, strings.Fields(*tags), mapKeyCallback, equalityCallback)
 }
 
 func filterOutVendor(importPaths []string) []string {
@@ -84,7 +84,7 @@ func handleImportPaths(
 	importPaths []string,
 	buildTags []string,
 	mapCallback mapCallbackFunc,
-	doubleEqualCallback doubleEqualCallbackFunc,
+	equalityCallback equalityCallbackFunc,
 ) {
 	fs := token.NewFileSet()
 
@@ -108,30 +108,30 @@ func handleImportPaths(
 	for _, pkg := range prog.InitialPackages() {
 		for _, file := range pkg.Files {
 			ast.Walk(mapVisitor{
-				fs:                  fs,
-				types:               pkg.Types,
-				mapCallback:         mapCallback,
-				doubleEqualCallback: doubleEqualCallback,
+				fs:               fs,
+				types:            pkg.Types,
+				mapCallback:      mapCallback,
+				equalityCallback: equalityCallback,
 			}, file)
 		}
 	}
 }
 
 type mapVisitor struct {
-	fs                  *token.FileSet
-	types               map[ast.Expr]types.TypeAndValue
-	mapCallback         mapCallbackFunc
-	doubleEqualCallback doubleEqualCallbackFunc
+	fs               *token.FileSet
+	types            map[ast.Expr]types.TypeAndValue
+	mapCallback      mapCallbackFunc
+	equalityCallback equalityCallbackFunc
 }
 
 func (v mapVisitor) Visit(node ast.Node) ast.Visitor {
 	// Detect time.Time == time.Time
 	binary, ok := node.(*ast.BinaryExpr)
-	if ok && v.doubleEqualCallback != nil {
+	if ok && v.equalityCallback != nil {
 		xType := v.types[binary.X].Type
 		yType := v.types[binary.Y].Type
 		if isTimeOrContainsTime(xType) && isTimeOrContainsTime(yType) && binary.Op == token.EQL {
-			v.doubleEqualCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
+			v.equalityCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
 		}
 		return nil
 	}

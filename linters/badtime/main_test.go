@@ -157,7 +157,7 @@ func TestTimeMapLint(t *testing.T) {
 			},
 		)
 	}
-	testDoubleEqualCallback := func(position token.Position, xStr, yStr string) {
+	testEqualityCallback := func(position token.Position, xStr, yStr string) {
 		filePath := position.Filename
 		filePathBase := path.Base(filePath)
 		_, ok := expectedLintErrors[filePathBase]
