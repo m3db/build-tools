@@ -62,7 +62,7 @@ func main() {
 	if *skipMap {
 		mapKeyCallback = nil
 	}
-	equalityCallback := printComparisonError
+	equalityCallback := printEqualityError
 	if !*skipEquality {
 		equalityCallback = nil
 	}
@@ -206,7 +206,7 @@ func printMapKeyError(position token.Position, keyStr, valStr string) {
 	)
 }
 
-func printComparisonError(position token.Position, xStr, yStr string) {
+func printEqualityError(position token.Position, xStr, yStr string) {
 	fmt.Printf(
 		"%s: Considering using .Equal() method instead of == when comparing %s and %s.\n",
 		position.String(),
