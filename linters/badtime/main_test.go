@@ -89,18 +89,6 @@ func TestTimeMapLint(t *testing.T) {
 				valStr:     "bool",
 			},
 		},
-		"test_file_6.go": []lintError{
-			lintError{
-				lineNumber: 27,
-				keyStr:     "./testdata.chanTime",
-				valStr:     "bool",
-			},
-			lintError{
-				lineNumber: 28,
-				keyStr:     "./testdata.chanTime",
-				valStr:     "bool",
-			},
-		},
 		"test_file_7.go": []lintError{
 			lintError{
 				lineNumber: 27,
@@ -176,7 +164,7 @@ func TestTimeMapLint(t *testing.T) {
 		[]string{"./testdata"},
 		[]string{"included"},
 		testMapCallback,
-		testComparisonCallback,
+		testEqualityCallback,
 	)
 
 	// Make sure all observed errors were expected

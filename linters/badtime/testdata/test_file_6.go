@@ -22,8 +22,11 @@ package testdata
 
 import "time"
 
-type chanTime chan time.Time
+type iface interface {
+	SomeMethodWithTime(t time.Time) bool
+}
 
-func test6() map[chanTime]bool {
-	return map[chanTime]bool{}
+// Make sure it doesn't detect interfaces with a time.Time in a method signature
+func test13(x, y iface) bool {
+	return x == y
 }

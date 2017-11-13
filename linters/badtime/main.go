@@ -157,9 +157,13 @@ func (v nodeVisitor) Visit(node ast.Node) ast.Visitor {
 // isTypeOrContainsTime returns whether the type x represents an instance of
 // time.Time or contains a nested time.Time
 func isTimeOrContainsTime(x types.Type) bool {
-	typeStr := x.String()
 	typeUnderlying := x.Underlying()
+	_, ok := typeUnderlying.(*types.Struct)
+	if !ok {
+		return false
+	}
 
+	typeStr := x.String()
 	// Detects map[time.Time]<T>
 	if strings.Contains(typeStr, "time.Time") {
 		return true
