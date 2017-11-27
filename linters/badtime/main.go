@@ -92,8 +92,9 @@ func handleImportPaths(
 	ctx.BuildTags = buildTags
 
 	conf := loader.Config{
-		Fset:  fs,
-		Build: &ctx,
+		Fset:        fs,
+		Build:       &ctx,
+		AllowErrors: true,
 	}
 
 	for _, importPath := range importPaths {
@@ -130,7 +131,7 @@ func (v nodeVisitor) Visit(node ast.Node) ast.Visitor {
 	if ok && v.equalityCallback != nil {
 		xType := v.types[binary.X].Type
 		yType := v.types[binary.Y].Type
-		if isTimeOrContainsTime(xType) && isTimeOrContainsTime(yType) && binary.Op == token.EQL {
+		if xType != nil && isTimeOrContainsTime(xType) && yType != nil && isTimeOrContainsTime(yType) && binary.Op == token.EQL {
 			v.equalityCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
 		}
 		return nil
