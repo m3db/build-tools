@@ -94,6 +94,8 @@ func handleImportPaths(
 	conf := loader.Config{
 		Fset:  fs,
 		Build: &ctx,
+		// Continue even if type or IO errors are present
+		AllowErrors: true,
 	}
 
 	for _, importPath := range importPaths {
@@ -130,7 +132,10 @@ func (v nodeVisitor) Visit(node ast.Node) ast.Visitor {
 	if ok && v.equalityCallback != nil {
 		xType := v.types[binary.X].Type
 		yType := v.types[binary.Y].Type
-		if isTimeOrContainsTime(xType) && isTimeOrContainsTime(yType) && binary.Op == token.EQL {
+		if binary.Op == token.EQL &&
+			// Type can be nil if there was a type-error
+			xType != nil && isTimeOrContainsTime(xType) &&
+			yType != nil && isTimeOrContainsTime(yType) {
 			v.equalityCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
 		}
 		return nil
