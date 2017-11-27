@@ -92,8 +92,9 @@ func handleImportPaths(
 	ctx.BuildTags = buildTags
 
 	conf := loader.Config{
-		Fset:        fs,
-		Build:       &ctx,
+		Fset:  fs,
+		Build: &ctx,
+		// Continue even if type or IO errors are present
 		AllowErrors: true,
 	}
 
@@ -132,6 +133,7 @@ func (v nodeVisitor) Visit(node ast.Node) ast.Visitor {
 		xType := v.types[binary.X].Type
 		yType := v.types[binary.Y].Type
 		if binary.Op == token.EQL &&
+			// Type can be nil if there was a type-error
 			xType != nil && isTimeOrContainsTime(xType) &&
 			yType != nil && isTimeOrContainsTime(yType) {
 			v.equalityCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
