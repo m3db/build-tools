@@ -131,7 +131,9 @@ func (v nodeVisitor) Visit(node ast.Node) ast.Visitor {
 	if ok && v.equalityCallback != nil {
 		xType := v.types[binary.X].Type
 		yType := v.types[binary.Y].Type
-		if xType != nil && isTimeOrContainsTime(xType) && yType != nil && isTimeOrContainsTime(yType) && binary.Op == token.EQL {
+		if binary.Op == token.EQL &&
+			xType != nil && isTimeOrContainsTime(xType) &&
+			yType != nil && isTimeOrContainsTime(yType) {
 			v.equalityCallback(v.fs.Position(binary.Pos()), xType.String(), yType.String())
 		}
 		return nil
