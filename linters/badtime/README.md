@@ -1,4 +1,5 @@
 # Badtime
+![Alt text](http://2.images.southparkstudios.com/images/shows/south-park/clip-thumbnails/season-6/0603/south-park-s06e03c03-thumper-the-super-cool-ski-instructor-16x9.jpg?quality=0.8)
 
 Badtime is a Golang linter that detects inappropriate usage of the time.Time struct. Currently it detects the following:
 
