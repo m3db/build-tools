@@ -31,7 +31,7 @@ Example:
 ## Installation
 
 ```bash
-go get -u https://github.com/m3db/build-tools/linters/badtime
+go get -u github.com/m3db/build-tools/linters/badtime
 ```
 
 ## Usage
@@ -60,3 +60,4 @@ Note that the badtime package interprets path arguments and build tags the same 
 ```bash
 go test <PATH_TO_BADTIME_IN_YOUR_$GOPATH>
 ```
+
