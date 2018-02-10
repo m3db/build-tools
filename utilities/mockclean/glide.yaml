@@ -1,0 +1,15 @@
+package: github.com/m3db/build-tools/utilities/mockclean
+import:
+- package: github.com/m3db/m3x
+  version: dbdbd564ff2f64388a641ce61f541eceb7d2e416
+  subpackages:
+  - log
+- package: golang.org/x/tools
+  version: 95b47aa5df4eda9bfbc0133f77c0e320f0275eba
+  subpackages:
+  - go/ast/astutil
+testImport:
+- package: github.com/stretchr/testify
+  version: ^1.2.1
+  subpackages:
+  - require

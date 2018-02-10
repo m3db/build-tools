@@ -1,0 +1,13 @@
+package main
+
+import (
+	"fmt"
+
+	_ "github.com/m3db/m3db"
+
+	"golang.org/x/net/context"
+)
+
+func main() {
+	fmt.Println("here")
+}
