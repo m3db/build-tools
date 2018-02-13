@@ -1,0 +1,11 @@
+package main
+
+import (
+	"fmt"
+	fmt0 "github.com/m3db/m3x/fmt"
+)
+
+func main() {
+	fmt0.Println("m3x fmt")
+	fmt.Println("stdlib fmt")
+}

@@ -1,0 +1,12 @@
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+
+	_ "github.com/m3db/m3db"
+)
+
+func main() {
+	fmt.Println("here")
+}

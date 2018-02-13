@@ -1,0 +1,25 @@
+hash: 49274365be70133dea086c6e357dc71d3c624fe92cd3dc47e36a19c6fa68dd1d
+updated: 2018-02-12T11:58:12.065379578-05:00
+imports:
+- name: github.com/m3db/m3x
+  version: dbdbd564ff2f64388a641ce61f541eceb7d2e416
+  subpackages:
+  - log
+- name: golang.org/x/tools
+  version: 95b47aa5df4eda9bfbc0133f77c0e320f0275eba
+  subpackages:
+  - go/ast/astutil
+testImports:
+- name: github.com/davecgh/go-spew
+  version: adab96458c51a58dc1783b3335dcce5461522e75
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
+  subpackages:
+  - assert
+  - require
