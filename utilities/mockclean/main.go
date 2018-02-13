@@ -43,13 +43,13 @@ import (
 )
 
 var (
-	pkg            = flag.String("pkg", "", "package mock is being generated for")
+	pkg            = flag.String("pkg", "", "full package mock is being generated for, e.g. github.com/m3db/m3db/client")
 	in             = flag.String("in", defaultInputStdin, "input path for mock being read, '-' for stdin")
-	out            = flag.String("out", "", "file path for mock being written")
+	out            = flag.String("out", "-", `file path for mock being written, "-" for stdout`)
 	perm           = flag.String("perm", "666", "permissions to write file with")
 	groupPrefixes  = flag.String("prefixes", defaultGroupPrefixes, "prefixes to group imports by")
-	selfRefCleanup = flag.Bool("cleanup-selfref", false, "cleanup self referrential imports")
-	importCleanup  = flag.Bool("cleanup-import", false, "cleanup import aliasing and ordering")
+	selfRefCleanup = flag.Bool("cleanup-selfref", true, "cleanup self referrential imports")
+	importCleanup  = flag.Bool("cleanup-import", true, "cleanup import aliasing and ordering")
 )
 
 const (
@@ -79,19 +79,17 @@ func main() {
 	if *in == defaultInputStdin {
 		inputData, err = ioutil.ReadAll(os.Stdin)
 	} else {
-		inputData, err = ioutil.ReadFile(*out)
+		inputData, err = ioutil.ReadFile(*in)
 	}
 	if err != nil {
 		logger.Fatalf("unable to read input: %v", err)
 	}
 
 	if *selfRefCleanup {
-		basePkg := extractBasePkg(*pkg)
-		replacer := strings.NewReplacer(
-			// Replace any self referential imports
-			fmt.Sprintf("%s \"%s\"", basePkg, *pkg), "",
-			fmt.Sprintf("%s.", basePkg), "")
-		inputData = []byte(replacer.Replace(string(inputData)))
+		inputData, err = removeSelfReferrentialImports(inputData, *pkg)
+		if err != nil {
+			logger.Fatalf("unable to cleanup self referrential imports: %v", err)
+		}
 	}
 
 	if *importCleanup {
@@ -107,10 +105,32 @@ func main() {
 		}
 	}
 
-	err = ioutil.WriteFile(*out, inputData, newFileMode)
+	if *out == "-" {
+		_, err = fmt.Printf("%s\n", string(inputData))
+	} else {
+		err = ioutil.WriteFile(*out, inputData, newFileMode)
+	}
 	if err != nil {
 		logger.Fatalf("unable to write output to %s: %v", *out, err)
 	}
+}
+
+func removeSelfReferrentialImports(src []byte, packageName string) ([]byte, error) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", src, parser.PackageClauseOnly)
+	if err != nil {
+		return nil, err
+	}
+	if file.Name == nil {
+		return nil, fmt.Errorf("unable to parse package")
+	}
+	basePkg := file.Name.Name
+
+	replacer := strings.NewReplacer(
+		// Replace any self referential imports
+		fmt.Sprintf("%s \"%s\"", basePkg, packageName), "",
+		fmt.Sprintf("%s.", basePkg), "")
+	return []byte(replacer.Replace(string(src))), nil
 }
 
 // reorderImports re-orders imports into groups following the convention below:
