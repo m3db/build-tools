@@ -1,11 +1,11 @@
 package: github.com/m3db/build-tools/importlint
 import:
 - package: github.com/kisielk/gotool
-  version: master
+  version: "~1.0"
 - package: golang.org/x/tools
-  version: master
+  version: 25101aadb97aa42907eee6a238d6d26a6cb3c756
   subpackages:
   - go/loader
 testImport:
 - package: github.com/stretchr/testify
-  version: ">= 1.1"
+  version: "~1.1"
