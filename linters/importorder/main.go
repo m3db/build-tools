@@ -28,8 +28,8 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 
@@ -89,10 +89,11 @@ func main() {
 }
 
 func printErrors(groupedErrors lintErrors) {
-	if len(groupedErrors) != 0 {
-		for _, imp := range groupedErrors {
-			// FILE:LINE:MESSAGE // NB (braskin): don't review this just yet
-			fmt.Printf("%s:%d: my message %s %s %s\n", imp.fileName, imp.line, imp.patternSeen, imp.importName, imp.err.Error())
+	for _, imp := range groupedErrors {
+		if imp.patternSeen != "" {
+			fmt.Printf("%s:%d: the import %s does not fit the specified pattern. error: %s (pattern already matched: %s)\n", imp.fileName, imp.line, imp.importName, imp.err.Error(), imp.patternSeen)
+		} else {
+			fmt.Printf("%s:%d: the import %s does not fit the specified pattern. error: %s\n", imp.fileName, imp.line, imp.importName, imp.err.Error())
 		}
 	}
 }
@@ -110,6 +111,9 @@ func handleImportPaths(importPaths []string, buildTags, patterns []string) lintE
 		ParserMode: parser.ImportsOnly,
 		// Continue even if type or IO errors are present
 		AllowErrors: true,
+		TypeChecker: types.Config{
+			Error: func(e error) {},
+		},
 	}
 
 	for _, importPath := range importPaths {
@@ -292,21 +296,13 @@ func findInternalPackageErrors(i int, group importGroup, importSpec importSpec, 
 			if match {
 				allMatch := true
 				for _, seen := range seenPatterns {
-					match, err := regexp.MatchString(seen, importSpec.Path)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "Unable to match: pattern, got error %v", err)
-						return nil
-					}
+					match := strings.Contains(importSpec.Path, seen)
 					if match {
 						allMatch = false
 					}
 				}
 				for _, pattern := range currentPatterns {
-					match, err := regexp.MatchString(pattern, importSpec.Path)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "Unable to match: pattern, got error %v", err)
-						return nil
-					}
+					match := strings.Contains(importSpec.Path, pattern)
 					if match {
 						allMatch = false
 					}
@@ -317,22 +313,14 @@ func findInternalPackageErrors(i int, group importGroup, importSpec importSpec, 
 				}
 			}
 		default:
-			match, err := regexp.MatchString(seen, importSpec.Path)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to match: pattern, got error %v", err)
-				return nil
-			}
+			match := strings.Contains(importSpec.Path, seen)
 			if match {
 				lintErrors = addLintError(importSpec, lintErrors, errImportMatchedAlready, seen)
 				return findRecErr(importGroup[1:], currentPatterns[0:], lintErrors, seenPatterns)
 			}
 		}
 	}
-	match, err := regexp.MatchString(currentPatterns[0], importSpec.Path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to match: pattern, got error %v", err)
-		return nil
-	}
+	match := strings.Contains(importSpec.Path, currentPatterns[0])
 	if match {
 		if patternSeen(currentPatterns[0], seenPatterns) {
 			lintErrors = addLintError(importSpec, lintErrors, errGroupMachedAlready, currentPatterns[0])
@@ -387,22 +375,14 @@ func findThirdPartyErrors(i int, group importGroup, importSpec importSpec, impor
 	// the remaining patterns or any of the seen patterns
 	if match {
 		for _, seen := range seenPatterns {
-			match, err := regexp.MatchString(seen, importSpec.Path)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to match: pattern, got error %v", err)
-				return nil
-			}
+			match := strings.Contains(importSpec.Path, seen)
 			if match {
 				lintErrors = addLintError(importSpec, lintErrors, errImportMatchedAlready, seen)
 				return findRecErr(importGroup[1:], currentPatterns[0:], lintErrors, seenPatterns)
 			}
 		}
 		for _, pattern := range currentPatterns {
-			match, err := regexp.MatchString(pattern, importSpec.Path)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to match: pattern, got error %v", err)
-				return nil
-			}
+			match := strings.Contains(importSpec.Path, pattern)
 			if match && !checking {
 				return findRecErr(importGroup[0:], currentPatterns[1:], lintErrors, seenPatterns)
 			}
