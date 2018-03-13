@@ -46,7 +46,9 @@ There are a few notes to point out:
 
 ```bash
 go get -u github.com/m3db/build-tools/linters/importorder
+cd $GOPATH/src/github.com/m3db/build-tools/linters/importorder
 glide install -v
+go install .
 ```
 
 ## Usage
