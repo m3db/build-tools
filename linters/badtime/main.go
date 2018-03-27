@@ -94,6 +94,9 @@ func handleImportPaths(
 	conf := loader.Config{
 		Fset:  fs,
 		Build: &ctx,
+		TypeChecker: types.Config{
+			Error: func(e error) {},
+		},
 		// Continue even if type or IO errors are present
 		AllowErrors: true,
 	}
