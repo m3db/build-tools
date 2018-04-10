@@ -20,7 +20,7 @@ $(TARGET): setup_$(TARGET)
 	@which go-junit-report > /dev/null || go get -u github.com/sectioneight/go-junit-report
 	@echo Building $(TARGET)
 	cd $(TARGET) && go test -v -race -timeout 5m -covermode atomic -coverprofile $(coverfile) ./... && \
-		$(SELF_DIR)/$(codecov_push) -f $(coverfile) -F $(TARGET)
+		$(SELF_DIR)/$(codecov_push) -f $(coverfile)
 
 endef
 

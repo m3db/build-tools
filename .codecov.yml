@@ -6,10 +6,6 @@ coverage:
   status:
     project:
       default: on
-      linters:
-        flags: linters/badtime
-      utilities:
-        flags: utilities/mockclean
     patch:
       default: off
     changes:
