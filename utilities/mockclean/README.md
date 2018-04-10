@@ -27,3 +27,6 @@ You can embed this inside a `go:generate` command, as follows:
 ```go
 //go:generate sh -c "mockgen -package=abc github.com/some/path/abc IFace0 | mockclean ..."
 ```
+
+## Known Limitations
+- `mockclean` assumes all go files in a folder `$GOPATH/src/github.com/xyz/abc` have package name set to the name of the folder ("abc" in this case). 
