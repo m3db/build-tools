@@ -1,16 +1,35 @@
-include .ci/common.mk
+SELF_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+include $(SELF_DIR)/.ci/common.mk
 
 coverfile         := cover.out
 test              := .ci/test-cover.sh
 
-install: install-glide
-	( cd linters/badtime ; glide install -v)
-	( cd utilities/mockclean ; glide install -v)
+TARGETS :=             \
+	linters/badtime      \
+	utilities/mockclean  \
 
-test-internal:
+define TARGET_RULES
+
+.PHONY: setup_$(TARGET)
+setup_$(TARGET):
+	@echo Installing deps for $(TARGET)
+	cd $(TARGET) && glide install -v
+
+.PHONY: $(TARGET)
+$(TARGET): setup_$(TARGET)
 	@which go-junit-report > /dev/null || go get -u github.com/sectioneight/go-junit-report
-	$(test) $(coverfile) | tee $(test_log)
+	@echo Building $(TARGET)
+	cd $(TARGET) && go test -v -race -timeout 5m -covermode atomic -coverprofile $(coverfile) ./... && \
+		goveralls -coverprofile=$(coverfile) -service=travis-ci || (echo -e "\x1b[31mCoveralls failed\x1b[m" && exit 1)
 
-test-ci-unit: test-internal
-	@which goveralls > /dev/null || go get -u -f github.com/mattn/goveralls
-	goveralls -coverprofile=$(coverfile) -service=travis-ci || echo -e "\x1b[31mCoveralls failed\x1b[m"
+endef
+
+$(foreach TARGET,$(TARGETS),$(eval $(TARGET_RULES)))
+
+.PHONY: targets
+targets: $(TARGETS)
+
+.PHONY: all
+all: targets
+
+.DEFAULT_GOAL := all
