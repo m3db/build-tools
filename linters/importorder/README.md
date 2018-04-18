@@ -22,7 +22,7 @@ import (
 )
 ```
 
-And this will fail on `context` because it should belong in the first group with the other standard library import:
+And this will fail because `context` should belong in the first group with the other standard library import:
 ```
 import (
 	"time"
@@ -39,7 +39,7 @@ import (
 There are a few notes to point out:
 
 1. If you are going to have two patterns where one is a subset of the other (e.g. `github.com/m3db/m3coordinator` and `github.com/m3db`), make sure that you provide the more specific one first. Otherwise, the linter will provide inaccurate results.
-2. Occasionally, you will get the error `number of import groups exceeds number of patterns. this usually means a previous or future import is out of order or you didn't specify the correct patterns`. Once we run out of patterns to check (i.e there are more import groups than patterns remaining), we stop checking and return. In this case, you should fix the imports for that file and rerun the linter to make sure no errors remain.
+2. If you want to see exactly how the imports should look like as opposed to just getting an error, set the `verbose` flag to `true` (e.g. `./importorder -patterns="STDLIB github.com/m3db/m3coordinator github.com/m3db EXTERNAL" -verbose=true path/to/directory`)
 3. If you want to specify Go's standard library imports, use "STDLIB", and if you want to have a catch-all, use "EXTERNAL" (for all other third party/external packages)
 
 ## Installation
