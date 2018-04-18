@@ -31,6 +31,7 @@ import (
 	"go/types"
 	"log"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/kisielk/gotool"
@@ -43,21 +44,16 @@ const (
 )
 
 var (
-	errMultipleImport       = errors.New("more than one import declaration found")
-	errOutOfOrder           = errors.New("import is out of order")
-	errImportMatchedAlready = errors.New("import already matched pattern")
-	errGroupMachedAlready   = errors.New("import group already matches previously seen pattern")
-	errNoMatch              = errors.New("import does not match any of the provided patterns or number of groups exceeds number of patterns provided")
+	errMultipleImport = errors.New("more than one import declaration found")
+	errOutOfOrder     = errors.New("imports are out of order")
 
 	defaultPattern = fmt.Sprintf("%s %s", standardImportGroup, externalImportGroup)
 )
 
 type lintError struct {
-	fileName    string
-	importName  string
-	line        int
-	patternSeen string
-	err         error
+	fileName                   string
+	goldStandard, originalDecl importDecl
+	err                        error
 }
 
 type lintErrors []lintError
@@ -66,6 +62,7 @@ func main() {
 	tags := flag.String("tags", "", "List of build tags to take into account when linting.")
 	skipVendor := flag.Bool("skip-vendor", true, "Skip vendor directors.")
 	rawPatterns := flag.String("patterns", defaultPattern, "Specify the patterns of each group in order. If checking for Go standard imports write `STDLIB`, if checking for a wildard group write `EXTERNAL`.")
+	verbose := flag.Bool("verbose", false, "If imports are out of order, determines whether we return just an error (false) or the full comparison list (true).")
 
 	flag.Parse()
 	importPaths := gotool.ImportPaths(flag.Args())
@@ -85,15 +82,17 @@ func main() {
 	}
 
 	groupedErrors := handleImportPaths(filteredPaths, strings.Fields(*tags), patterns)
-	printErrors(groupedErrors)
+	printErrors(verbose, groupedErrors)
 }
 
-func printErrors(groupedErrors lintErrors) {
-	for _, imp := range groupedErrors {
-		if imp.patternSeen != "" {
-			fmt.Printf("%s:%d: the import %s does not fit the specified pattern. error: %s (pattern already matched: %s)\n", imp.fileName, imp.line, imp.importName, imp.err.Error(), imp.patternSeen)
-		} else {
-			fmt.Printf("%s:%d: the import %s does not fit the specified pattern. error: %s\n", imp.fileName, imp.line, imp.importName, imp.err.Error())
+func printErrors(verbose *bool, groupedErrors lintErrors) {
+	if *verbose {
+		for _, imp := range groupedErrors {
+			fmt.Printf("%s:%v: import groups should look like:\n%v\n", imp.fileName, imp.err, imp.goldStandard)
+		}
+	} else {
+		for _, imp := range groupedErrors {
+			fmt.Printf("%s: %v.\n", imp.fileName, imp.err)
 		}
 	}
 }
@@ -129,11 +128,136 @@ func handleImportPaths(importPaths []string, buildTags, patterns []string) lintE
 	for _, pkg := range prog.InitialPackages() {
 		for _, file := range pkg.Files {
 			imports := imports(fs, file)
-			fileLintErr := findErrors(imports, patterns, file)
-			groupedLintErrors = append(groupedLintErrors, fileLintErr...)
+			if len(imports) == 0 {
+				continue
+			}
+			validateImportDecl(imports)
+			goldStandard, err := getGoldStandard(imports, patterns)
+			// for testing
+			// for _, g := range goldStandard.Groups {
+			// 	fmt.Println(g.Imports)
+			// }
+			// fmt.Println("********")
+			if err != nil {
+				groupedLintErrors = append(groupedLintErrors, lintError{err: err, fileName: fs.Position(file.Pos()).Filename})
+			} else {
+				if !compareImports(goldStandard, imports[0]) {
+					groupedLintErrors = append(groupedLintErrors, lintError{fileName: fs.Position(file.Pos()).Filename,
+						originalDecl: imports[0],
+						goldStandard: goldStandard,
+						err:          errOutOfOrder,
+					})
+				}
+			}
 		}
 	}
 	return groupedLintErrors
+}
+
+func compareImports(goldStandard, originalImportDecl importDecl) bool {
+	goldGroups := goldStandard.Groups
+	originalGroups := originalImportDecl.Groups
+
+	if len(goldGroups) != len(originalGroups) {
+		return false
+	}
+
+	for i, goldGroup := range goldGroups {
+		for j, goldImport := range goldGroup.Imports {
+			if goldImport != originalGroups[i].Imports[j] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func getGoldStandard(imports []importDecl, patterns []string) (importDecl, error) {
+	var emptyImportDecl importDecl
+	if len(imports) > 1 {
+		return emptyImportDecl, errMultipleImport
+	}
+
+	if len(imports) == 0 {
+		return emptyImportDecl, nil
+	}
+
+	combinedImports := concatenateImports(imports[0])
+	goldStandard := createGoldStandard(combinedImports, patterns)
+
+	return goldStandard, nil
+}
+
+func createGoldStandard(imports []importSpec, patterns []string) importDecl {
+	groups := make([]importGroup, 0, len(patterns))
+	importMap := convertToMap(imports)
+
+	for i, pattern := range patterns {
+		var tempGroup []importSpec
+		for imp := range importMap {
+			if pattern == standardImportGroup {
+				tempGroup = orderStdLib(tempGroup, imp, importMap)
+			}
+			if pattern == externalImportGroup {
+				tempGroup = orderExt(tempGroup, imp, importMap, patterns, i)
+			}
+			if strings.Contains(imp.Path, pattern) {
+				tempGroup = append(tempGroup, imp)
+				delete(importMap, imp)
+			}
+		}
+		sort.Sort(importSpecs(tempGroup))
+		if len(tempGroup) > 0 {
+			importGroup := importGroup{Imports: tempGroup}
+			groups = append(groups, importGroup)
+		}
+	}
+	return importDecl{
+		Groups: groups,
+	}
+}
+
+func orderExt(tempGroup []importSpec, imp importSpec, importMap map[importSpec]interface{}, patterns []string, i int) []importSpec {
+	if i == len(patterns)-1 {
+		if strings.Contains(imp.Path, ".") {
+			tempGroup = append(tempGroup, imp)
+			delete(importMap, imp)
+		}
+	} else {
+		for _, pattern := range patterns[i+1:] {
+			if !strings.Contains(imp.Path, pattern) {
+				tempGroup = append(tempGroup, imp)
+				delete(importMap, imp)
+			}
+		}
+	}
+	return tempGroup
+}
+
+func orderStdLib(tempGroup []importSpec, imp importSpec, importMap map[importSpec]interface{}) []importSpec {
+	if !isThirdParty(imp.Path) {
+		tempGroup = append(tempGroup, imp)
+		delete(importMap, imp)
+	}
+	return tempGroup
+}
+
+func convertToMap(imports []importSpec) map[importSpec]interface{} {
+	importsMap := make(map[importSpec]interface{})
+	for _, imp := range imports {
+		importsMap[imp] = struct{}{}
+	}
+	return importsMap
+}
+
+func concatenateImports(imports importDecl) []importSpec {
+	var combinedImports []importSpec
+	for _, group := range imports.Groups {
+		for _, imp := range group.Imports {
+			combinedImports = append(combinedImports, imp)
+		}
+	}
+	return combinedImports
 }
 
 // importDecl is the collection of importGroups contained in a single import block.
@@ -143,7 +267,21 @@ type importDecl struct {
 
 // importGroup is a collection of imports
 type importGroup struct {
-	Imports []importSpec
+	Imports importSpecs
+}
+
+type importSpecs []importSpec
+
+func (imp importSpecs) Len() int {
+	return len(imp)
+}
+
+func (imp importSpecs) Swap(i, j int) {
+	imp[i], imp[j] = imp[j], imp[i]
+}
+
+func (imp importSpecs) Less(i, j int) bool {
+	return imp[i].Path < imp[j].Path
 }
 
 // importSpec is a single import
@@ -229,217 +367,7 @@ func validateImportDecl(importDecls []importDecl) {
 	}
 }
 
-func findErrors(importDecls []importDecl, patterns []string, file *ast.File) lintErrors {
-	var (
-		lintErrors lintErrors
-
-		// seenPatterns is used to keep track of patterns that have been seen already
-		seenPatterns []string
-	)
-
-	validateImportDecl(importDecls)
-
-	// check if there is more than one import declaration
-	if len(importDecls) > 1 {
-		lintErr := lintError{
-			fileName: importDecls[0].Groups[0].Imports[0].Name,
-			err:      errMultipleImport,
-		}
-		lintErrors = append(lintErrors, lintErr)
-		return lintErrors
-	}
-
-	if len(importDecls) > 0 {
-		return findRecErr(importDecls[0].Groups, patterns, lintErrors, seenPatterns)
-	}
-
-	return lintErrors
-}
-
-func findRecErr(importGroup []importGroup, currentPatterns []string, lintErrors lintErrors, seenPatterns []string) lintErrors {
-	for _, group := range importGroup {
-		var checking bool
-		for i, importSpec := range group.Imports {
-			// if there are still groups to check, but no more patterns left, throw an error
-			if len(currentPatterns) == 0 && len(importGroup) > 0 {
-				lintErrors = addLintError(importSpec, lintErrors, errNoMatch, "")
-				return findRecErr(importGroup[1:], currentPatterns, lintErrors, seenPatterns)
-			}
-			// checking against "STDLIB"
-			if currentPatterns[0] == standardImportGroup {
-				return findStandardLibErrors(i, group, importSpec, importGroup, currentPatterns, lintErrors, seenPatterns, checking)
-			}
-			// checking against "EXTERNAL"
-			if currentPatterns[0] == externalImportGroup {
-				return findThirdPartyErrors(i, group, importSpec, importGroup, currentPatterns, lintErrors, seenPatterns, checking)
-			}
-			// checking against all other patterns (i.e. not "STDLIB" or "EXTERNAL")
-			if currentPatterns[0] != standardImportGroup && currentPatterns[0] != externalImportGroup {
-				return findInternalPackageErrors(i, group, importSpec, importGroup, currentPatterns, lintErrors, seenPatterns, checking)
-			}
-		}
-	}
-	return lintErrors
-}
-
-func findInternalPackageErrors(i int, group importGroup, importSpec importSpec, importGroup []importGroup, currentPatterns []string, lintErrors lintErrors, seenPatterns []string, checking bool) lintErrors {
-	for _, seen := range seenPatterns {
-		switch seen {
-		case standardImportGroup:
-			match := isThirdParty(importSpec.Path)
-			if !match {
-				lintErrors = addLintError(importSpec, lintErrors, errImportMatchedAlready, seen)
-				return findRecErr(importGroup[1:], currentPatterns[0:], lintErrors, seenPatterns)
-			}
-		case externalImportGroup:
-			match := isThirdParty(importSpec.Path)
-			if match {
-				allMatch := true
-				for _, seen := range seenPatterns {
-					match := strings.Contains(importSpec.Path, seen)
-					if match {
-						allMatch = false
-					}
-				}
-				for _, pattern := range currentPatterns {
-					match := strings.Contains(importSpec.Path, pattern)
-					if match {
-						allMatch = false
-					}
-				}
-				if allMatch {
-					lintErrors = addLintError(importSpec, lintErrors, errImportMatchedAlready, seen)
-					return findRecErr(importGroup[1:], currentPatterns[0:], lintErrors, seenPatterns)
-				}
-			}
-		default:
-			match := strings.Contains(importSpec.Path, seen)
-			if match {
-				lintErrors = addLintError(importSpec, lintErrors, errImportMatchedAlready, seen)
-				return findRecErr(importGroup[1:], currentPatterns[0:], lintErrors, seenPatterns)
-			}
-		}
-	}
-	match := strings.Contains(importSpec.Path, currentPatterns[0])
-	if match {
-		if patternSeen(currentPatterns[0], seenPatterns) {
-			lintErrors = addLintError(importSpec, lintErrors, errGroupMachedAlready, currentPatterns[0])
-			return findRecErr(importGroup[1:], currentPatterns[1:], lintErrors, seenPatterns)
-		}
-		checking = true
-	}
-	if !match && checking {
-		lintErrors = addLintError(importSpec, lintErrors, errOutOfOrder, currentPatterns[0])
-	}
-	if !match && !checking {
-		return findRecErr(importGroup[0:], currentPatterns[1:], lintErrors, seenPatterns)
-	}
-	if i == len(group.Imports)-1 {
-		seenPatterns = addSeenPattern(currentPatterns[0], seenPatterns)
-		return findRecErr(importGroup[1:], currentPatterns[1:], lintErrors, seenPatterns)
-	}
-	i++
-	return findInternalPackageErrors(i, group, group.Imports[i], importGroup, currentPatterns, lintErrors, seenPatterns, checking)
-}
-
-func findStandardLibErrors(i int, group importGroup, importSpec importSpec, importGroup []importGroup, currentPatterns []string, lintErrors lintErrors, seenPatterns []string, checking bool) lintErrors {
-	match := isThirdParty(importSpec.Path)
-	// !match guarantees that the import is part of Go's standard library since it ensure there is no "." in the name
-	if !match {
-		if patternSeen(currentPatterns[0], seenPatterns) {
-			lintErrors = addLintError(importSpec, lintErrors, errGroupMachedAlready, currentPatterns[0])
-			return findRecErr(importGroup[1:], currentPatterns[1:], lintErrors, seenPatterns)
-		}
-		checking = true
-	}
-	// if we are checking against the standard library pattern, but the next import has a "." in it, we know it's out of order
-	if match && checking {
-		lintErrors = addLintError(importSpec, lintErrors, errOutOfOrder, currentPatterns[0])
-	}
-	// if we haven't seen a standard library import then we know that we should just skip to next pattern
-	if match && !checking {
-		return findRecErr(importGroup[0:], currentPatterns[1:], lintErrors, seenPatterns)
-	}
-	// check to see if we are at the last import of the group, then add "STDLIB" to list of seen patterns
-	if i == len(group.Imports)-1 {
-		seenPatterns = addSeenPattern(currentPatterns[0], seenPatterns)
-		return findRecErr(importGroup[1:], currentPatterns[1:], lintErrors, seenPatterns)
-	}
-	i++
-	return findStandardLibErrors(i, group, group.Imports[i], importGroup, currentPatterns, lintErrors, seenPatterns, checking)
-}
-
-func findThirdPartyErrors(i int, group importGroup, importSpec importSpec, importGroup []importGroup, currentPatterns []string, lintErrors lintErrors, seenPatterns []string, checking bool) lintErrors {
-	match := isThirdParty(importSpec.Path)
-	// if we know there is a "." in the name, we need to make sure that the import doesn't match any of
-	// the remaining patterns or any of the seen patterns
-	if match {
-		for _, seen := range seenPatterns {
-			match := strings.Contains(importSpec.Path, seen)
-			if match {
-				lintErrors = addLintError(importSpec, lintErrors, errImportMatchedAlready, seen)
-				return findRecErr(importGroup[1:], currentPatterns[0:], lintErrors, seenPatterns)
-			}
-		}
-		for _, pattern := range currentPatterns {
-			match := strings.Contains(importSpec.Path, pattern)
-			if match && !checking {
-				return findRecErr(importGroup[0:], currentPatterns[1:], lintErrors, seenPatterns)
-			}
-			if match && checking {
-				lintErrors = addLintError(importSpec, lintErrors, errImportMatchedAlready, pattern)
-				seenPatterns = addSeenPattern(currentPatterns[0], seenPatterns)
-				return findRecErr(importGroup[1:], currentPatterns[1:], lintErrors, seenPatterns)
-			}
-		}
-		checking = true
-	}
-	if !match && checking {
-		lintErrors = addLintError(importSpec, lintErrors, errOutOfOrder, standardImportGroup)
-	}
-	if !match && !checking {
-		lintErrors = addLintError(importSpec, lintErrors, errOutOfOrder, standardImportGroup)
-		return findRecErr(importGroup[0:], currentPatterns[1:], lintErrors, seenPatterns)
-	}
-	if i == len(group.Imports)-1 {
-		seenPatterns = addSeenPattern(currentPatterns[0], seenPatterns)
-		return findRecErr(importGroup[1:], currentPatterns[1:], lintErrors, seenPatterns)
-	}
-	i++
-	return findThirdPartyErrors(i, group, group.Imports[i], importGroup, currentPatterns, lintErrors, seenPatterns, checking)
-}
-
-func patternSeen(pattern string, seenPatterns []string) bool {
-	for _, p := range seenPatterns {
-		if p == pattern {
-			return true
-		}
-	}
-	return false
-}
-
-func addSeenPattern(pattern string, seenPatterns []string) []string {
-	for _, p := range seenPatterns {
-		if p == pattern {
-			return seenPatterns
-		}
-	}
-	seenPatterns = append(seenPatterns, pattern)
-	return seenPatterns
-}
-
 func isThirdParty(path string) bool {
 	re := regexp.MustCompile(`\.`)
 	return re.MatchString(path)
-}
-
-func addLintError(i importSpec, lintErrors lintErrors, err error, pattern string) lintErrors {
-	lintErrors = append(lintErrors, lintError{
-		fileName:    i.Name,
-		importName:  i.Path,
-		line:        i.Line,
-		patternSeen: pattern,
-		err:         err,
-	})
-	return lintErrors
 }

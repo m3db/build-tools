@@ -36,152 +36,18 @@ func getFilename(path string) string {
 }
 
 func TestImportLinter(t *testing.T) {
-	expectedInternalLintErrors := lintErrors{
-		lintError{
-			fileName:    getFilename("./testdata/normal_order/test_file_1.go"),
-			importName:  "\"github.com/m3db/m3coordinator/models\"",
-			line:        39,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errImportMatchedAlready,
-		},
-		lintError{
-			fileName: getFilename("./testdata/normal_order/test_file_2.go"),
-			err:      errMultipleImport,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/normal_order/test_file_3.go"),
-			importName:  "\"github.com/m3db/m3db/digest\"",
-			line:        36,
-			patternSeen: "github.com/m3db",
-			err:         errImportMatchedAlready,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/normal_order/test_file_4.go"),
-			importName:  "\"time\"",
-			line:        26,
-			patternSeen: standardImportGroup,
-			err:         errImportMatchedAlready,
-		},
-		lintError{
-			fileName:   getFilename("./testdata/normal_order/test_file_4.go"),
-			importName: "\"gopkg.in/alecthomas/kingpin.v2\"",
-			line:       30,
-			err:        errNoMatch,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/normal_order/test_file_6.go"),
-			importName:  "\"go.uber.org/zap\"",
-			line:        25,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errOutOfOrder,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/normal_order/test_file_6.go"),
-			importName:  "\"gopkg.in/alecthomas/kingpin.v2\"",
-			line:        26,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errOutOfOrder,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/normal_order/test_file_6.go"),
-			importName:  "\"github.com/m3db/m3coordinator/services/m3coordinator/config\"",
-			line:        28,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errImportMatchedAlready,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/normal_order/test_file_6.go"),
-			importName:  "\"context\"",
-			line:        35,
-			patternSeen: standardImportGroup,
-			err:         errOutOfOrder,
-		},
-		lintError{
-			fileName:   getFilename("./testdata/normal_order/test_file_6.go"),
-			importName: "\"context\"",
-			line:       35,
-			err:        errNoMatch,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/normal_order/test_file_8.go"),
-			importName:  "\"go.uber.org/zap\"",
-			line:        30,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errOutOfOrder,
-		},
-	}
-
-	expectedExternalLintErrors := lintErrors{
-		lintError{
-			fileName:    getFilename("./testdata/ext_order/test_file_2.go"),
-			importName:  "\"github.com/m3db/m3coordinator/services/m3coordinator/config\"",
-			line:        32,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errImportMatchedAlready,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/ext_order/test_file_3.go"),
-			importName:  "\"go.uber.org/zap\"",
-			line:        25,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errOutOfOrder,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/ext_order/test_file_3.go"),
-			importName:  "\"github.com/m3db/m3coordinator/services/m3coordinator/config\"",
-			line:        27,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errImportMatchedAlready,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/ext_order/test_file_4.go"),
-			importName:  "\"github.com/m3db/m3coordinator/services/m3coordinator/config\"",
-			line:        31,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errImportMatchedAlready,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/ext_order/test_file_4.go"),
-			importName:  "\"github.com/alecthomas/template\"",
-			line:        35,
-			patternSeen: externalImportGroup,
-			err:         errImportMatchedAlready,
-		},
-		lintError{
-			fileName:   getFilename("./testdata/ext_order/test_file_5.go"),
-			importName: "\"fmt\"",
-			line:       33,
-			err:        errNoMatch,
-		},
-		lintError{
-			fileName:   getFilename("./testdata/ext_order/test_file_6.go"),
-			importName: "\"time\"",
-			line:       35,
-			err:        errNoMatch,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/ext_order/test_file_7.go"),
-			importName:  "\"github.com/m3db/m3db/client\"",
-			line:        28,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errOutOfOrder,
-		},
-		lintError{
-			fileName:    getFilename("./testdata/ext_order/test_file_7.go"),
-			importName:  "\"github.com/m3db/m3coordinator/services/m3coordinator/httpd\"",
-			line:        30,
-			patternSeen: "github.com/m3db/m3coordinator",
-			err:         errImportMatchedAlready,
-		},
-	}
-
 	groupedIntErrors := handleImportPaths(
 		[]string{"./testdata/normal_order/"},
 		[]string{"integration"},
 		[]string{"STDLIB", "github.com/m3db/m3coordinator", "github.com/m3db", "EXTERNAL"},
 	)
 
-	require.Equal(t, expectedInternalLintErrors, groupedIntErrors)
+	require.Equal(t, errOutOfOrder, groupedIntErrors[0].err)
+	require.Equal(t, errMultipleImport, groupedIntErrors[1].err)
+	require.Equal(t, errOutOfOrder, groupedIntErrors[2].err)
+	require.Equal(t, errOutOfOrder, groupedIntErrors[3].err)
+	require.Equal(t, errOutOfOrder, groupedIntErrors[4].err)
+	require.Equal(t, errOutOfOrder, groupedIntErrors[5].err)
 
 	groupedExtErrors := handleImportPaths(
 		[]string{"./testdata/ext_order/"},
@@ -189,5 +55,19 @@ func TestImportLinter(t *testing.T) {
 		[]string{"STDLIB", "EXTERNAL", "github.com/m3db/m3coordinator", "github.com/m3db"},
 	)
 
-	require.Equal(t, expectedExternalLintErrors, groupedExtErrors)
+	require.Equal(t, errOutOfOrder, groupedExtErrors[1].err)
+	require.Equal(t, errOutOfOrder, groupedExtErrors[2].err)
+	require.Equal(t, errOutOfOrder, groupedExtErrors[3].err)
+	require.Equal(t, errOutOfOrder, groupedExtErrors[4].err)
+	require.Equal(t, errOutOfOrder, groupedExtErrors[5].err)
+	require.Equal(t, errOutOfOrder, groupedExtErrors[6].err)
+
+	// for testing purposes (keep for now)
+	// _ = handleImportPaths(
+	// 	[]string{"./testdata/test/"},
+	// 	[]string{"integration"},
+	// 	[]string{"STDLIB", "github.com/m3db/m3coordinator", "github.com/m3db", "EXTERNAL"},
+	// )
+
+	// fmt.Println(groupedIntErrors)
 }
