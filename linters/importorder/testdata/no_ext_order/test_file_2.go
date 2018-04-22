@@ -25,28 +25,22 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/m3db/m3coordinator/models"
 	"github.com/m3db/m3coordinator/services/m3coordinator/config"
 	"github.com/m3db/m3coordinator/services/m3coordinator/httpd"
 	"github.com/m3db/m3coordinator/util/logging"
 
 	"github.com/m3db/m3db/client"
-	xtime "github.com/m3db/m3x/time"
 
-	"github.com/m3db/m3db/digest"
-	"go.uber.org/zap"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/alecthomas/template/parse"
+	"github.com/beorn7/perks/quantile"
 )
 
-func test3() {
+func test2() {
 	fmt.Println("import fmt", time.Now())
 	var _ = config.Configuration{}
-	var _ = models.Tags{}
-	var _ = digest.NewBuffer()
 	var _ = httpd.Handler{}
 	var _ = logging.WithContext(context.TODO())
 	var _ = client.NewOptions()
-	var _ = xtime.Millisecond
-	var _ = kingpin.Arg("", "")
-	var _ = zap.String("address", "")
+	var _ = quantile.NewHighBiased(1)
+	var _ = parse.NewIdentifier("test")
 }

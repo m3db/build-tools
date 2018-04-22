@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,6 @@ import (
 	"go/token"
 	"go/types"
 	"log"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -140,6 +139,7 @@ func handleImportPaths(importPaths []string, buildTags, patterns []string) lintE
 			// fmt.Println("********")
 			if err != nil {
 				groupedLintErrors = append(groupedLintErrors, lintError{err: err, fileName: fs.Position(file.Pos()).Filename})
+				continue
 			} else {
 				if !compareImports(goldStandard, imports[0]) {
 					groupedLintErrors = append(groupedLintErrors, lintError{fileName: fs.Position(file.Pos()).Filename,
@@ -195,16 +195,16 @@ func createGoldStandard(imports []importSpec, patterns []string) importDecl {
 	for i, pattern := range patterns {
 		var tempGroup []importSpec
 		for imp := range importMap {
-			if pattern == standardImportGroup {
+			switch {
+			case pattern == standardImportGroup:
 				tempGroup = orderStdLib(tempGroup, imp, importMap)
-			}
-			if pattern == externalImportGroup {
+			case pattern == externalImportGroup:
 				tempGroup = orderExt(tempGroup, imp, importMap, patterns, i)
-			}
-			if strings.Contains(imp.Path, pattern) {
+			case strings.Contains(imp.Path, pattern):
 				tempGroup = append(tempGroup, imp)
-				delete(importMap, imp)
+			default:
 			}
+			delete(importMap, imp)
 		}
 		sort.Sort(importSpecs(tempGroup))
 		if len(tempGroup) > 0 {
@@ -217,33 +217,31 @@ func createGoldStandard(imports []importSpec, patterns []string) importDecl {
 	}
 }
 
-func orderExt(tempGroup []importSpec, imp importSpec, importMap map[importSpec]interface{}, patterns []string, i int) []importSpec {
+func orderExt(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}, patterns []string, i int) []importSpec {
 	if i == len(patterns)-1 {
 		if strings.Contains(imp.Path, ".") {
 			tempGroup = append(tempGroup, imp)
-			delete(importMap, imp)
 		}
 	} else {
 		for _, pattern := range patterns[i+1:] {
 			if !strings.Contains(imp.Path, pattern) {
 				tempGroup = append(tempGroup, imp)
-				delete(importMap, imp)
 			}
 		}
 	}
 	return tempGroup
 }
 
-func orderStdLib(tempGroup []importSpec, imp importSpec, importMap map[importSpec]interface{}) []importSpec {
+func orderStdLib(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}) []importSpec {
 	if !isThirdParty(imp.Path) {
 		tempGroup = append(tempGroup, imp)
-		delete(importMap, imp)
+		// delete(importMap, imp)
 	}
 	return tempGroup
 }
 
-func convertToMap(imports []importSpec) map[importSpec]interface{} {
-	importsMap := make(map[importSpec]interface{})
+func convertToMap(imports []importSpec) map[importSpec]struct{} {
+	importsMap := make(map[importSpec]struct{})
 	for _, imp := range imports {
 		importsMap[imp] = struct{}{}
 	}
@@ -368,6 +366,5 @@ func validateImportDecl(importDecls []importDecl) {
 }
 
 func isThirdParty(path string) bool {
-	re := regexp.MustCompile(`\.`)
-	return re.MatchString(path)
+	return strings.Contains(path, ".")
 }

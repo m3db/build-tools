@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -62,12 +62,12 @@ func TestImportLinter(t *testing.T) {
 	require.Equal(t, errOutOfOrder, groupedExtErrors[5].err)
 	require.Equal(t, errOutOfOrder, groupedExtErrors[6].err)
 
-	// for testing purposes (keep for now)
-	// _ = handleImportPaths(
-	// 	[]string{"./testdata/test/"},
-	// 	[]string{"integration"},
-	// 	[]string{"STDLIB", "github.com/m3db/m3coordinator", "github.com/m3db", "EXTERNAL"},
-	// )
+	groupedNoExtErrors := handleImportPaths(
+		[]string{"./testdata/no_ext_order/"},
+		[]string{"included"},
+		[]string{"STDLIB", "github.com/m3db/m3coordinator", "github.com/m3db"},
+	)
 
-	// fmt.Println(groupedIntErrors)
+	require.Equal(t, errOutOfOrder, groupedNoExtErrors[0].err)
+	require.Equal(t, errOutOfOrder, groupedNoExtErrors[1].err)
 }
