@@ -1,4 +1,4 @@
-package: github.com/m3db/build-tools/importlint
+package: github.com/m3db/build-tools/importorder
 import:
 - package: github.com/kisielk/gotool
   version: "^1.0"

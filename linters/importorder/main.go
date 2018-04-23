@@ -197,6 +197,8 @@ func createGoldStandard(imports []importSpec, patterns []string) importDecl {
 			case strings.Contains(imp.Path, pattern):
 				tempGroup = append(tempGroup, imp)
 			default:
+				// no need to do anything special here since an import that doesn't match
+				// any pattern should cause the linter to fail
 			}
 			delete(importMap, imp)
 		}
@@ -229,7 +231,6 @@ func orderExt(tempGroup []importSpec, imp importSpec, importMap map[importSpec]s
 func orderStdLib(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}) []importSpec {
 	if !isThirdParty(imp.Path) {
 		tempGroup = append(tempGroup, imp)
-		// delete(importMap, imp)
 	}
 	return tempGroup
 }

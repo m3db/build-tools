@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/m3db/m3coordinator/errors"
-  "context"
+	"context"
 	"github.com/m3db/m3coordinator/policy/resolver"
 
 	"github.com/m3db/m3db/client"
