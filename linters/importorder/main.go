@@ -132,22 +132,16 @@ func handleImportPaths(importPaths []string, buildTags, patterns []string) lintE
 			}
 			validateImportDecl(imports)
 			goldStandard, err := getGoldStandard(imports, patterns)
-			// for testing
-			// for _, g := range goldStandard.Groups {
-			// 	fmt.Println(g.Imports)
-			// }
-			// fmt.Println("********")
 			if err != nil {
 				groupedLintErrors = append(groupedLintErrors, lintError{err: err, fileName: fs.Position(file.Pos()).Filename})
 				continue
-			} else {
-				if !compareImports(goldStandard, imports[0]) {
-					groupedLintErrors = append(groupedLintErrors, lintError{fileName: fs.Position(file.Pos()).Filename,
-						originalDecl: imports[0],
-						goldStandard: goldStandard,
-						err:          errOutOfOrder,
-					})
-				}
+			}
+			if !compareImports(goldStandard, imports[0]) {
+				groupedLintErrors = append(groupedLintErrors, lintError{fileName: fs.Position(file.Pos()).Filename,
+					originalDecl: imports[0],
+					goldStandard: goldStandard,
+					err:          errOutOfOrder,
+				})
 			}
 		}
 	}
