@@ -1,0 +1,8 @@
+Without build tags
+github.com/testcase/testcase/a
+github.com/testcase/testcase/a/b
+
+With build tags
+github.com/testcase/testcase
+github.com/testcase/testcase/a
+github.com/testcase/testcase/a/b
