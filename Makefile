@@ -7,6 +7,7 @@ test              := .ci/test-cover.sh
 TARGETS :=             \
 	linters/badtime      \
 	utilities/mockclean  \
+	linters/importorder  \
 
 define TARGET_RULES
 
