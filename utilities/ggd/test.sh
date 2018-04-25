@@ -32,9 +32,9 @@ function banner() {
 
 # NB: need to set these or `git init` fails in the CI.
 [ ! -z "$(git config --global user.name)" ] || \
-  git config --global user.name "Semaphore CIRunner"
+  git config --global user.name "CIRunner"
 [ ! -z "$(git config --global user.email)" ] || \
-  git config --global user.email "semaphore@semaphoreci.com"
+  git config --global user.email "ci@ci.com"
 
 cwd=${GOPATH}/src/github.com/m3db/build-tools
 temp_dir=$(mktemp -d)
@@ -81,7 +81,7 @@ for testfile in $(ls ${cwd}/utilities/ggd/tests); do
   TARGET_FILE=${cwd}/utilities/ggd/bin/${test_case}.out
   echo "${test_case} executing test"
   GOPATH=${temp_dir} PATH=${temp_dir}/bin:$PATH \
-    ${cwd}/utilities/ggd/tests/${testfile} > ${TARGET_FILE}
+    ${cwd}/utilities/ggd/tests/${testfile} >${TARGET_FILE} 2>&1
 
   diff ${cwd}/utilities/ggd/testdata/${test_case}/expected.out ${TARGET_FILE} || \
     (echo "${test_case} failed, files differ"; exit 1)

@@ -119,30 +119,20 @@ func (g ImportGraph) addEdge(from, to string) {
 
 // Closure returns all the transitive closure of all packages reachable
 // by starting at the provided paths in the ImportGraph.
-func (g ImportGraph) Closure(paths ...string) (ImportSet, error) {
+func (g ImportGraph) Closure(paths ...string) ImportSet {
 	closure := make(ImportSet)
 	for _, p := range paths {
-		err := g.walk(p, closure)
-		if err != nil {
-			return nil, err
-		}
+		g.walk(p, closure)
 	}
-	return closure, nil
+	return closure
 }
 
-func (g ImportGraph) walk(node string, visited ImportSet) error {
+func (g ImportGraph) walk(node string, visited ImportSet) {
 	if _, ok := visited[node]; ok {
-		return nil
+		return
 	}
 	visited[node] = struct{}{}
-	edges, ok := g[node]
-	if !ok {
-		return fmt.Errorf("could not find node '%s' in graph", node)
+	for to := range g[node] {
+		g.walk(to, visited)
 	}
-	for to := range edges {
-		if err := g.walk(to, visited); err != nil {
-			return err
-		}
-	}
-	return nil
 }

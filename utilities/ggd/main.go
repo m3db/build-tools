@@ -233,10 +233,7 @@ func dagHelper(changedPackages []string, basePkg string) (
 		fullChangeSet[p] = struct{}{}
 	}
 
-	closure, err := g.Closure(changedPackages...)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("unable to compute change closure: %v", err)
-	}
+	closure := g.Closure(changedPackages...)
 	debug("change closure: %v", g)
 
 	for p := range closure {
