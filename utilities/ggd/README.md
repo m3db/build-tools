@@ -44,5 +44,5 @@ ggd -t integration -d
 # (7) The same as (6), but include debug output (sent to STDERR), and
 # save the generated DAG in changes.png for visualization
 ggd -t integration -d -o change.dot
-dot -Tpng change.png change.dot
+dot -Tpng change.png changes.dot
 ```
