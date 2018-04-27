@@ -94,7 +94,7 @@ func main() {
 	if !*includePrechanges {
 		debug("skipping pre-change affected packages (includePrechanges=false)")
 	} else {
-		dirty, err := lib.CwgIsDirty()
+		dirty, err := lib.CWDIsDirty()
 		dieIfErr(err, "unable to checkout base-branch for prechange impact: %v", err)
 		dieIf(dirty, "cwg is dirty, unable to checkout base-branch for prechange impact")
 
@@ -114,9 +114,9 @@ func main() {
 		debug("affected packages (including transitive changes): %v", baseFullChangeSet)
 	}
 
-	currentSha1, err := sha1Fn()
+	currentSHA1, err := sha1Fn()
 	dieIfErr(err, "unable to extract current sha1: %v", err)
-	if currentSha1 != headRef {
+	if currentSHA1 != headRef {
 		debug("checking out head-ref: %v", headRef)
 		checkoutResult, err := lib.Checkout(headRef)
 		dieIfErr(err, "unable to checkout head-ref: %v", err)
@@ -155,19 +155,19 @@ func main() {
 	debug("created dot output file at %v", dotOutputFile)
 }
 
-type currentSha1Fn func() (string, error)
+type currentSHA1Fn func() (string, error)
 
 type rangeExtractor struct {
-	sha1Fn currentSha1Fn
+	sha1Fn currentSHA1Fn
 }
 
 func (r rangeExtractor) extractRanges(args []string) (base string, head string, err error) {
-	currentSha1, err := r.sha1Fn()
+	currentSHA1, err := r.sha1Fn()
 	if err != nil {
 		return "", "", fmt.Errorf("unable to retrieve current sha1: %v", err)
 	}
 	if len(args) == 0 {
-		return "master", currentSha1, nil
+		return "master", currentSHA1, nil
 	}
 	const rangeParam = ".."
 	arg0 := args[0]
@@ -177,11 +177,11 @@ func (r rangeExtractor) extractRanges(args []string) (base string, head string, 
 			return "", "", fmt.Errorf("illegal commit range provided: %s", arg0)
 		}
 		if strings.ToLower(tokens[1]) == "head" {
-			return tokens[0], currentSha1, nil
+			return tokens[0], currentSHA1, nil
 		}
 		return tokens[0], tokens[1], nil
 	}
-	return arg0, currentSha1, nil
+	return arg0, currentSHA1, nil
 }
 
 func computeDot(changedSet, fullChangeSet lib.ImportSet, graph lib.ImportGraph, basePkg string) string {

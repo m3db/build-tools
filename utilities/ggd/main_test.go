@@ -29,7 +29,7 @@ import (
 func TestSha1Extraction(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
-		sha1Fn       currentSha1Fn
+		sha1Fn       currentSHA1Fn
 		args         []string
 		expectedBase string
 		expectedHead string
@@ -57,13 +57,13 @@ func TestSha1Extraction(t *testing.T) {
 	}
 }
 
-func testSha1Fn() currentSha1Fn {
+func testSha1Fn() currentSHA1Fn {
 	return func() (string, error) {
 		return "TESTSHA1", nil
 	}
 }
 
-func failingTestSha1Fn() currentSha1Fn {
+func failingTestSha1Fn() currentSHA1Fn {
 	return func() (string, error) {
 		return "", fmt.Errorf("random error")
 	}

@@ -46,8 +46,8 @@ func ChangedFiles(commitRange string, basePkg string) ([]string, error) {
 	return res, nil
 }
 
-// CwgIsDirty returns whether the current directory is dirty.
-func CwgIsDirty() (bool, error) {
+// CWDIsDirty returns whether the current directory is dirty.
+func CWDIsDirty() (bool, error) {
 	cmd := exec.Command("git", "status", "--porcelain")
 	dat, err := cmd.Output()
 	if err != nil {

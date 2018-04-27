@@ -1,12 +1,13 @@
 ggd - GoGitDiff
 ===============
 
-This is a tool to compute the packages affected by the difference between two Git
-revisions. It's primary goal is to help speed up CI jobs by figuring out the packages
-affected by git changes, and transitively looking through the Go Imports. It takes
-inspiration from `gta`, and the work done at [DigitalOcean].
+`ggd` is a tool to compute Go packages affected by changes between two Git revisions.
+It does so by identifying the Go packages changed between two Git revisions, and computing
+all other packages which depend upon them. It's primary goal is to help speed up CI jobs by
+figuring out the packages affected by git changes, and transitively looking through the Go Imports.
+It takes inspiration from `gta`, and the work done at [DigitalOcean].
 
-NB: debug mode (`-d`) allows users to inspect how the tool arrives at the decisions it does.
+NB: debug mode (`-d`) allows users to inspect the tool's decision making process.
 
   [DigitalOcean]: https://blog.digitalocean.com/cthulhu-organizing-go-code-in-a-scalable-repo/
 

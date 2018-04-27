@@ -28,8 +28,11 @@ import (
 	"golang.org/x/tools/go/buildutil"
 )
 
-// ImportGraph is a map from a package -> all the packages that import it.
-type ImportGraph map[string]map[string]struct{}
+// ImportSet is a set of imports.
+type ImportSet map[string]struct{}
+
+// ImportGraph is a map from a Go package, `p` to the set of all packages which import `p`.
+type ImportGraph map[string]ImportSet
 
 // String representation of the Import Graph.
 func (g ImportGraph) String() string {
@@ -41,9 +44,6 @@ func (g ImportGraph) String() string {
 	}
 	return buffer.String()
 }
-
-// ImportSet is a set of imports
-type ImportSet map[string]struct{}
 
 func NewImportGraph(ctx *build.Context, basePkg string) (ImportGraph, error) {
 	pkgs := buildutil.ExpandPatterns(ctx, []string{basePkg + "/..."})
@@ -95,8 +95,7 @@ func (g ImportGraph) maybeAddEdge(
 		// It's okay for Import to return an error as not all packages that can be found in
 		// a package will necessarily be present. For example, packages imported only by test
 		// files in vendored packages will not be installed. In the case of an error, Import
-		// always returns a non-nil *Package. In the case of an error it will only contain
-		// partial information.
+		// always returns a non-nil *Package that contains partial information.
 		importBuildPkg, _ := ctx.Import(path, buildPkg.Dir, build.FindOnly)
 		if importBuildPkg != nil {
 			importedPkg = importBuildPkg.ImportPath
@@ -117,7 +116,7 @@ func (g ImportGraph) addEdge(from, to string) {
 	edges[to] = struct{}{}
 }
 
-// Closure returns all the transitive closure of all packages reachable
+// Closure return the transitive closure of all packages reachable
 // by starting at the provided paths in the ImportGraph.
 func (g ImportGraph) Closure(paths ...string) ImportSet {
 	closure := make(ImportSet)
