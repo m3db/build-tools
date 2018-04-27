@@ -68,7 +68,6 @@ var (
 		"optionally, visualize changes in a dot file (only in debug mode)")
 )
 
-// Run executes the ggd command.
 func main() {
 	getopt.Parse()
 	if err := validateArgs(); err != nil {
@@ -233,7 +232,8 @@ func dagHelper(changedPackages []string, basePkg string) (
 		fullChangeSet[p] = struct{}{}
 	}
 
-	closure := g.Closure(changedPackages...)
+	closure, err := g.Closure(changedPackages...)
+	dieIfErr(err, "unable to find closure: %v", err)
 	debug("change closure: %v", g)
 
 	for p := range closure {
