@@ -131,6 +131,9 @@ func (g ImportGraph) walk(node string, visited ImportSet) {
 	if _, ok := visited[node]; ok {
 		return
 	}
+	if _, ok := g[node]; !ok {
+		panic(fmt.Sprintf("node (%s) doesn't exist in the graph", node))
+	}
 	visited[node] = struct{}{}
 	for to := range g[node] {
 		g.walk(to, visited)
