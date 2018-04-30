@@ -28,6 +28,16 @@ import (
 	"golang.org/x/tools/go/buildutil"
 )
 
+// DanglingDeleteError indicates an otherwise un-imported package was deleted
+// from the repository.
+type DanglingDeleteError struct {
+	pkgName string
+}
+
+func (d DanglingDeleteError) Error() string {
+	return fmt.Sprintf("dangling package deleted: %v", d.pkgName)
+}
+
 // ImportSet is a set of imports.
 type ImportSet map[string]struct{}
 
@@ -116,17 +126,21 @@ func (g ImportGraph) addEdge(from, to string) {
 	edges[to] = struct{}{}
 }
 
+// Vertices returns all known vertices in the graph.
+func (g ImportGraph) Vertices() ImportSet {
+	visited := make(ImportSet)
+	for node, impSet := range g {
+		visited[node] = struct{}{}
+		for imp := range impSet {
+			visited[imp] = struct{}{}
+		}
+	}
+	return visited
+}
+
 // Closure return the transitive closure of all packages reachable
 // by starting at the provided paths in the ImportGraph.
 func (g ImportGraph) Closure(paths ...string) (ImportSet, error) {
-	// add all the paths we're starting at, as they are by definition
-	// reachable.
-	// for _, p := range paths {
-	// 	if _, ok := g[p]; !ok {
-	// 		g[p] = make(ImportSet)
-	// 	}
-	// }
-
 	// recursive walk
 	closure := make(ImportSet)
 	for _, p := range paths {
@@ -144,7 +158,8 @@ func (g ImportGraph) walk(node string, visited ImportSet) error {
 		return nil
 	}
 	if _, ok := g[node]; !ok {
-		return fmt.Errorf("unable to find %s in the graph", node)
+		// NB(prateek): this happens in the case of un-used deleted packages. Look at testcase7.
+		return DanglingDeleteError{node}
 	}
 	visited[node] = struct{}{}
 	for to := range g[node] {

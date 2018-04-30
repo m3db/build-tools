@@ -60,12 +60,19 @@ dot -Tpng change.png change.dot
 `
 
 var (
-	basePkg           = getopt.StringLong("base-package", 'p', "", "repository package (can leave blank typically)")
-	includePrechanges = getopt.BoolLong("include-prechange", 'i', "include prechanges for golang import dag calculation")
-	debugMode         = getopt.BoolLong("debug", 'd', "debug mode - useful for understanding output")
-	buildTags         = getopt.ListLong("build-tags", 't', "comma separated golang build tags")
-	dotOutputFile     = getopt.StringLong("output-file", 'o', "",
-		"optionally, visualize changes in a dot file (only in debug mode)")
+	basePkg          = getopt.StringLong("base-package", 'p', "", "repository package (can leave blank typically)")
+	debugMode        = getopt.BoolLong("debug", 'd', "debug mode - useful for understanding output")
+	buildTags        = getopt.ListLong("build-tags", 't', "comma separated golang build tags")
+	catchallPatterns = getopt.ListLong("catchall-patterns", 'c', "comma separated file/dir names, such that if any of these are changed, all tests are run")
+	filterPatterns   = getopt.ListLong("filter-patterns", 'f', "comma separated dir names to be filtered out during change calculation")
+	dotOutputFile    = getopt.StringLong("output-file", 'o', "", "optionally, visualize changes in a dot file (only in debug mode)")
+)
+
+var (
+	defaultCatchallPatterns = []string{
+		"/testdata/", // go list ./... is unable to gauge impact of changes to this directory
+	}
+	defaultFilterPatterns = []string{"/vendor/"}
 )
 
 func main() {
@@ -86,31 +93,30 @@ func main() {
 
 	debug("files changed from git: %v", gitChanges)
 	debug("calculating changed packages")
-	packageChanges := lib.ChangedPackages(gitChanges)
-	debug("changed packages: %v", packageChanges)
 
-	baseFullChangeSet := make(lib.ImportSet)
-	if !*includePrechanges {
-		debug("skipping pre-change affected packages (includePrechanges=false)")
+	debug("default catchall patterns %v", defaultCatchallPatterns)
+	catchall := defaultCatchallPatterns
+	if catchallPatterns != nil && len(*catchallPatterns) != 0 {
+		debug("overriding catchall patterns to %v", *catchallPatterns)
+		catchall = *catchallPatterns
+	}
+
+	allPackagesAffected := anyMatches(gitChanges, catchall)
+	debug("allPackagesAffected %v", allPackagesAffected)
+
+	changedPackages := []string{}
+	if !allPackagesAffected {
+		changedPackages = lib.ChangedPackages(gitChanges)
+		debug("changed packages: %v", changedPackages)
 	} else {
-		dirty, err := lib.CWDIsDirty()
-		dieIfErr(err, "unable to checkout base-branch for prechange impact: %v", err)
-		dieIf(dirty, "cwg is dirty, unable to checkout base-branch for prechange impact")
+		debug("skipping changed packages calculation, know all are affected")
+	}
 
-		// checkout base branch, compute affected packages
-		debug("computing pre-change affected packages", baseRef)
-		debug("checking out base-branch: %v", baseRef)
-
-		checkoutResult, err := lib.Checkout(baseRef)
-		dieIfErr(err, "unable to checkout master: %v", err)
-
-		debug("checked out base-branch: %v", baseRef)
-		debug("git-output: %v", checkoutResult)
-		debug("calculating affected packages on base-branch due to changes")
-
-		_, _, baseFullChangeSet, err = dagHelper(packageChanges, *basePkg)
-		dieIfErr(err, "unable to compute affected packages: %v", err)
-		debug("affected packages (including transitive changes): %v", baseFullChangeSet)
+	debug("default filter patterns %v", defaultFilterPatterns)
+	filters := defaultFilterPatterns
+	if filterPatterns != nil && len(*filterPatterns) != 0 {
+		debug("overriding filter patterns to %v", *filterPatterns)
+		filters = *filterPatterns
 	}
 
 	currentSHA1, err := sha1Fn()
@@ -124,18 +130,10 @@ func main() {
 	}
 
 	debug("calculating affected packages on head-ref due to changes")
-	changeSet, graph, fullChangeSet, err := dagHelper(packageChanges, *basePkg)
+	changeSet, graph, fullChangeSet, err := dagHelper(changedPackages, allPackagesAffected, filters, *basePkg)
 	dieIfErr(err, "unable to compute dag: %v", err)
 	debug("affected packages (including transitive changes): %v", fullChangeSet)
 	debug("change graph: %v", graph)
-
-	if *includePrechanges {
-		debug("merging changesets")
-		// merge
-		for c := range baseFullChangeSet {
-			fullChangeSet[c] = struct{}{}
-		}
-	}
 
 	// output changedset
 	for c := range fullChangeSet {
@@ -209,7 +207,12 @@ func computeDot(changedSet, fullChangeSet lib.ImportSet, graph lib.ImportGraph, 
 	return dGraph.String()
 }
 
-func dagHelper(changedPackages []string, basePkg string) (
+func dagHelper(
+	changedPackages []string,
+	allPackagesChanged bool,
+	filterPatterns []string,
+	basePkg string,
+) (
 	changedSet lib.ImportSet,
 	g lib.ImportGraph,
 	fullChangeSet lib.ImportSet,
@@ -225,15 +228,45 @@ func dagHelper(changedPackages []string, basePkg string) (
 	}
 	debug("import graph: %v", g)
 
-	changedSet = make(lib.ImportSet)
-	fullChangeSet = make(lib.ImportSet)
-	for _, p := range changedPackages {
-		changedSet[p] = struct{}{}
-		fullChangeSet[p] = struct{}{}
+	allPackagesFn := func() {
+		allVerts := g.Vertices()
+		debug("graphVertices: %v", g)
+		debug("applying filter patterns", filterPatterns)
+		for vert := range allVerts {
+			if lib.MatchesAny(vert, filterPatterns) {
+				debug("%v matched filter pattern, dropping", vert)
+				delete(allVerts, vert)
+			}
+		}
+		changedSet = allVerts
+		fullChangeSet = allVerts
 	}
 
-	closure, err := g.Closure(changedPackages...)
-	dieIfErr(err, "unable to find closure: %v", err)
+	if allPackagesChanged {
+		allPackagesFn()
+		return changedSet, g, fullChangeSet, nil
+	}
+
+	changedSet = make(lib.ImportSet)
+	fullChangeSet = make(lib.ImportSet)
+	changedPackageNames := make([]string, 0, len(changedPackages))
+	for _, p := range changedPackages {
+		if lib.MatchesAny(p, filterPatterns) {
+			debug("%v matched filter pattern, dropping", p)
+			continue
+		}
+		changedSet[p] = struct{}{}
+		fullChangeSet[p] = struct{}{}
+		changedPackageNames = append(changedPackageNames, p)
+	}
+
+	closure, err := g.Closure(changedPackageNames...)
+	if err != nil {
+		debug("unable to compute closure: %v", err)
+		debug("defaulting to all packages")
+		allPackagesFn()
+		return changedSet, g, fullChangeSet, nil
+	}
 	debug("change closure: %v", g)
 
 	for p := range closure {
@@ -280,6 +313,15 @@ func inferPackage() (string, error) {
 
 	currentPkg := strings.TrimPrefix(d, path_prefix)
 	return currentPkg, nil
+}
+
+func anyMatches(inputs []string, patterns []string) bool {
+	for _, in := range inputs {
+		if lib.MatchesAny(in, patterns) {
+			return true
+		}
+	}
+	return false
 }
 
 func printUsage() {

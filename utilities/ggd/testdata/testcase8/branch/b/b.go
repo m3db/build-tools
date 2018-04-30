@@ -18,40 +18,4 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package lib
-
-import (
-	"path/filepath"
-	"strings"
-)
-
-// ChangedPackages returns all changed packages.
-func ChangedPackages(changedFiles []string) []string {
-	changedPkgs := make(map[string]struct{}, len(changedFiles))
-	for _, f := range changedFiles {
-		changedPkgs[filepath.Dir(f)] = struct{}{}
-	}
-	pkgs := make([]string, 0, len(changedPkgs))
-	for p := range changedPkgs {
-		pkgs = append(pkgs, p)
-	}
-	return pkgs
-}
-
-// filterChanges filters changed files based on the following heuristic,
-// only files meeting any of the following conditions affect go compilation
-// 	- any .go file
-//  - any directory called `testdata/`
-//
-// also filters any `vendor/` directory paths
-func filterChanges(input []string) []string {
-	out := make([]string, 0, len(input))
-	for _, i := range input {
-		if strings.Contains(i, "/vendor/") {
-			continue
-		} else if strings.HasSuffix(i, ".go") || strings.Contains(i, "/testdata/") {
-			out = append(out, i)
-		}
-	}
-	return out
-}
+package b
