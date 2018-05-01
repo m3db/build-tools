@@ -1,0 +1,2 @@
+# whilelist any sub-directories using vendor/ for tests
+!**/vendor/
