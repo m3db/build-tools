@@ -60,11 +60,15 @@ dot -Tpng change.png change.dot
 `
 
 var (
+	filterPatternRune   = 'f'
+	catchallPatternRune = 'c'
+)
+var (
 	basePkg          = getopt.StringLong("base-package", 'p', "", "repository package (can leave blank typically)")
 	debugMode        = getopt.BoolLong("debug", 'd', "debug mode - useful for understanding output")
 	buildTags        = getopt.ListLong("build-tags", 't', "comma separated golang build tags")
-	catchallPatterns = getopt.ListLong("catchall-patterns", 'c', "comma separated file/dir names, such that if any of these are changed, all tests are run")
-	filterPatterns   = getopt.ListLong("filter-patterns", 'f', "comma separated dir names to be filtered out during change calculation")
+	catchallPatterns = getopt.ListLong("catchall-patterns", catchallPatternRune, "comma separated file/dir names, such that if any of these are changed, all tests are run")
+	filterPatterns   = getopt.ListLong("filter-patterns", filterPatternRune, "comma separated dir names to be filtered out during change calculation")
 	dotOutputFile    = getopt.StringLong("output-file", 'o', "", "optionally, visualize changes in a dot file (only in debug mode)")
 )
 
@@ -77,6 +81,7 @@ var (
 )
 
 func main() {
+	getopt.Lookup(filterPatternRune).SetOptional()
 	getopt.Parse()
 	if err := validateArgs(); err != nil {
 		printUsage()
@@ -97,7 +102,7 @@ func main() {
 
 	debug("default catchall patterns %v", defaultCatchallPatterns)
 	catchall := defaultCatchallPatterns
-	if catchallPatterns != nil && len(*catchallPatterns) != 0 {
+	if getopt.Lookup(catchallPatternRune).Seen() && catchallPatterns != nil {
 		debug("overriding catchall patterns to %v", *catchallPatterns)
 		catchall = *catchallPatterns
 	}
@@ -115,7 +120,7 @@ func main() {
 
 	debug("default filter patterns %v", defaultFilterPatterns)
 	filters := defaultFilterPatterns
-	if filterPatterns != nil && len(*filterPatterns) != 0 {
+	if getopt.Lookup(filterPatternRune).Seen() && filterPatterns != nil {
 		debug("overriding filter patterns to %v", *filterPatterns)
 		filters = *filterPatterns
 	}

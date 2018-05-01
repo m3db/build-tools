@@ -55,7 +55,7 @@ function defer {
 }
 trap defer EXIT
 
-for testfile in $(ls ${cwd}/utilities/ggd/tests); do
+for testfile in $(ls ${cwd}/utilities/ggd/tests | grep 9); do
   filename=$(basename -- "$testfile")
   test_case="${filename%.*}"
   banner "${test_case} starting test case"
