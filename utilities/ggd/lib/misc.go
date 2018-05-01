@@ -26,6 +26,7 @@ import (
 )
 
 // ChangedPackages returns all changed packages.
+// NB: changedFiles are expected to be relative paths.
 func ChangedPackages(changedFiles []string) []string {
 	changedPkgsMap := make(map[string]struct{}, len(changedFiles))
 	for _, f := range changedFiles {

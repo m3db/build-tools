@@ -28,6 +28,7 @@ import (
 )
 
 // ChangedFiles returns the files changed in the provided commit range.
+// NB: this returns relative paths.
 func ChangedFiles(commitRange string, basePkg string) ([]string, error) {
 	cmd := exec.Command("git", "diff-tree", "--no-commit-id", "--name-only", "-r", commitRange)
 	dat, err := cmd.Output()
