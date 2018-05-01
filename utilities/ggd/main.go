@@ -81,7 +81,6 @@ var (
 )
 
 func main() {
-	getopt.Lookup(filterPatternRune).SetOptional()
 	getopt.Parse()
 	if err := validateArgs(); err != nil {
 		printUsage()
@@ -103,8 +102,8 @@ func main() {
 	debug("default catchall patterns %v", defaultCatchallPatterns)
 	catchall := defaultCatchallPatterns
 	if getopt.Lookup(catchallPatternRune).Seen() && catchallPatterns != nil {
-		debug("overriding catchall patterns to %v", *catchallPatterns)
-		catchall = *catchallPatterns
+		catchall = trimStringSlice(*catchallPatterns)
+		debug("overriding catchall patterns to %v", catchall)
 	}
 
 	allPackagesAffected := anyMatches(gitChanges, catchall)
@@ -121,8 +120,8 @@ func main() {
 	debug("default filter patterns %v", defaultFilterPatterns)
 	filters := defaultFilterPatterns
 	if getopt.Lookup(filterPatternRune).Seen() && filterPatterns != nil {
-		debug("overriding filter patterns to %v", *filterPatterns)
-		filters = *filterPatterns
+		filters = trimStringSlice(*filterPatterns)
+		debug("overriding filter patterns to %v", filters)
 	}
 
 	currentSHA1, err := sha1Fn()
@@ -156,6 +155,18 @@ func main() {
 	err = ioutil.WriteFile(*dotOutputFile, []byte(dotOutput), 0644)
 	dieIfErr(err, "unable to write output file: %v", err)
 	debug("created dot output file at %v", dotOutputFile)
+}
+
+func trimStringSlice(args []string) []string {
+	ret := make([]string, 0, len(args))
+	for _, arg := range args {
+		arg = strings.TrimSpace(arg)
+		if len(arg) == 0 {
+			continue
+		}
+		ret = append(ret, arg)
+	}
+	return ret
 }
 
 type currentSHA1Fn func() (string, error)
@@ -256,6 +267,7 @@ func dagHelper(
 	changedSet = make(lib.ImportSet)
 	fullChangeSet = make(lib.ImportSet)
 	changedPackageNames := make([]string, 0, len(changedPackages))
+	debug("applying filter patterns: %v, len: %d", filterPatterns, len(filterPatterns))
 	for _, p := range changedPackages {
 		if lib.MatchesAny(p, filterPatterns) {
 			debug("%v matched filter pattern, dropping", p)
