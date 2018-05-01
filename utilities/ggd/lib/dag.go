@@ -159,6 +159,9 @@ func (g ImportGraph) walk(node string, visited ImportSet) error {
 	}
 	if _, ok := g[node]; !ok {
 		// NB(prateek): this happens in the case of un-used deleted packages. Look at testcase7.
+		// Not strictly an error, but I'm treating it as one so we run the entire testsuite in case
+		// there's another edge case I haven't considered here. Can revisit my paranoia down the road
+		// once we've been using this for a while.
 		return DanglingDeleteError{node}
 	}
 	visited[node] = struct{}{}
