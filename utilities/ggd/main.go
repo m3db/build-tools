@@ -70,7 +70,8 @@ var (
 
 var (
 	defaultCatchallPatterns = []string{
-		"/testdata/", // go list ./... is unable to gauge impact of changes to this directory
+		"/testdata/",               // go list ./... is unable to gauge impact of changes to this directory
+		"glide.yaml", "glide.lock", // any changes to glide deps should run all tests
 	}
 	defaultFilterPatterns = []string{"/vendor/"}
 )
