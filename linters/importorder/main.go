@@ -187,20 +187,29 @@ func createGoldStandard(imports []importSpec, patterns []string) importDecl {
 	importMap := convertToMap(imports)
 
 	for i, pattern := range patterns {
-		var tempGroup []importSpec
+
+		var (
+			tempGroup []importSpec
+			matched   bool
+		)
+
 		for imp := range importMap {
+			matched = false
 			switch {
 			case pattern == standardImportGroup:
-				tempGroup = orderStdLib(tempGroup, imp, importMap)
+				tempGroup, matched = orderStdLib(tempGroup, imp, importMap)
 			case pattern == externalImportGroup:
-				tempGroup = orderExt(tempGroup, imp, importMap, patterns, i)
+				tempGroup, matched = orderExt(tempGroup, imp, importMap, patterns, i)
 			case strings.Contains(imp.Path, pattern):
 				tempGroup = append(tempGroup, imp)
+				matched = true
 			default:
 				// no need to do anything special here since an import that doesn't match
 				// any pattern should cause the linter to fail
 			}
-			delete(importMap, imp)
+			if matched {
+				delete(importMap, imp)
+			}
 		}
 		sort.Sort(importSpecs(tempGroup))
 		if len(tempGroup) > 0 {
@@ -213,26 +222,31 @@ func createGoldStandard(imports []importSpec, patterns []string) importDecl {
 	}
 }
 
-func orderExt(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}, patterns []string, i int) []importSpec {
+func orderExt(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}, patterns []string, i int) ([]importSpec, bool) {
+	var matched bool
 	if i == len(patterns)-1 {
 		if strings.Contains(imp.Path, ".") {
 			tempGroup = append(tempGroup, imp)
+			matched = true
 		}
 	} else {
 		for _, pattern := range patterns[i+1:] {
 			if !strings.Contains(imp.Path, pattern) {
 				tempGroup = append(tempGroup, imp)
+				matched = true
 			}
 		}
 	}
-	return tempGroup
+	return tempGroup, matched
 }
 
-func orderStdLib(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}) []importSpec {
+func orderStdLib(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}) ([]importSpec, bool) {
+	var matched bool
 	if !isThirdParty(imp.Path) {
 		tempGroup = append(tempGroup, imp)
+		matched = true
 	}
-	return tempGroup
+	return tempGroup, matched
 }
 
 func convertToMap(imports []importSpec) map[importSpec]struct{} {
