@@ -190,24 +190,24 @@ func createGoldStandard(imports []importSpec, patterns []string) importDecl {
 
 		var (
 			tempGroup []importSpec
-			remove    bool
+			matched   bool
 		)
 
 		for imp := range importMap {
-			remove = false
+			matched = false
 			switch {
 			case pattern == standardImportGroup:
-				tempGroup, remove = orderStdLib(tempGroup, imp, importMap)
+				tempGroup, matched = orderStdLib(tempGroup, imp, importMap)
 			case pattern == externalImportGroup:
-				tempGroup, remove = orderExt(tempGroup, imp, importMap, patterns, i)
+				tempGroup, matched = orderExt(tempGroup, imp, importMap, patterns, i)
 			case strings.Contains(imp.Path, pattern):
 				tempGroup = append(tempGroup, imp)
-				remove = true
+				matched = true
 			default:
 				// no need to do anything special here since an import that doesn't match
 				// any pattern should cause the linter to fail
 			}
-			if remove {
+			if matched {
 				delete(importMap, imp)
 			}
 		}
@@ -223,30 +223,30 @@ func createGoldStandard(imports []importSpec, patterns []string) importDecl {
 }
 
 func orderExt(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}, patterns []string, i int) ([]importSpec, bool) {
-	var remove bool
+	var matched bool
 	if i == len(patterns)-1 {
 		if strings.Contains(imp.Path, ".") {
 			tempGroup = append(tempGroup, imp)
-			remove = true
+			matched = true
 		}
 	} else {
 		for _, pattern := range patterns[i+1:] {
 			if !strings.Contains(imp.Path, pattern) {
 				tempGroup = append(tempGroup, imp)
-				remove = true
+				matched = true
 			}
 		}
 	}
-	return tempGroup, remove
+	return tempGroup, matched
 }
 
 func orderStdLib(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}) ([]importSpec, bool) {
-	var remove bool
+	var matched bool
 	if !isThirdParty(imp.Path) {
 		tempGroup = append(tempGroup, imp)
-		remove = true
+		matched = true
 	}
-	return tempGroup, remove
+	return tempGroup, matched
 }
 
 func convertToMap(imports []importSpec) map[importSpec]struct{} {
