@@ -53,6 +53,7 @@ type lintError struct {
 	fileName                   string
 	goldStandard, originalDecl importDecl
 	err                        error
+	line                       int
 }
 
 type lintErrors []lintError
@@ -87,11 +88,12 @@ func main() {
 func printErrors(verbose *bool, groupedErrors lintErrors) {
 	if *verbose {
 		for _, imp := range groupedErrors {
-			fmt.Printf("%s:%v: import groups should look like:\n%v\n", imp.fileName, imp.err, imp.goldStandard)
+			// todo(braskin): update this so it works with the gometalinter
+			fmt.Printf("%s:%d: %v. import groups should look like:\n%v\n", imp.fileName, imp.line, imp.err, imp.goldStandard)
 		}
 	} else {
 		for _, imp := range groupedErrors {
-			fmt.Printf("%s: %v.\n", imp.fileName, imp.err)
+			fmt.Printf("%s:%d: %v.\n", imp.fileName, imp.line, imp.err)
 		}
 	}
 }
