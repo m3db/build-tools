@@ -42,6 +42,25 @@ There are a few notes to point out:
 2. If you want to see exactly how the imports should look like as opposed to just getting an error, set the `verbose` flag to `true` (e.g. `./importorder -patterns="STDLIB github.com/m3db/m3coordinator github.com/m3db EXTERNAL" -verbose=true path/to/directory`)
 3. If you want to specify Go's standard library imports, use "STDLIB", and if you want to have a catch-all, use "EXTERNAL" (for all other third party/external packages)
 
+## Gometalinter integration
+
+`importorder` is designed to integrate with [gometalinter](https://github.com/alecthomas/gometalinter). To add it to the list of active linters, make sure `importorder` is installed, and then modify the `.metalinter.json` file to add "importorder" to the "Enable" array and also add it to the "Linters" object.
+
+Example:
+
+```json
+{
+  "Linters": {
+    "importorder": {
+      "Command": "importorder -patterns=\"STDLIB github.com/m3db/m3coordinator github.com/m3db EXTERNAL\"",
+      "Pattern": "PATH:LINE:MESSAGE"
+    },
+  },
+  "Enable":
+    [ "importorder" ],
+}
+```
+
 ## Installation
 
 ```bash
