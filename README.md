@@ -10,3 +10,4 @@ Various build tools used as part of the M3DB project
 1. [badtime](https://github.com/m3db/build-tools/blob/master/linters/badtime/README.md) - gometalinter plugin that detects inappropriate usage of the time.Time struct.
 2. [mockclean](https://github.com/m3db/build-tools/blob/master/utilities/mockclean/README.md) - CLI tool to make `mockgen` runs idempotent.
 3. [importorder](https://github.com/m3db/build-tools/blob/master/linters/importorder/README.md) - gometalinter plugin that detects accuracy of import ordering based on user specified patterns.
+4. [ggd](https://github.com/m3db/build-tools/blob/master/utilities/ggd/README.md) - CLI tool to find which go packages are affected by git changes. Useful to speedup CI builds.

@@ -2,3 +2,4 @@ cover.out
 main
 test.log
 vendor
+bin/

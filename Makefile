@@ -1,13 +1,14 @@
 SELF_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 include $(SELF_DIR)/.ci/common.mk
 
-coverfile         := cover.out
-test              := .ci/test-cover.sh
+coverfile := cover.out
+test      := .ci/test-cover.sh
 
 TARGETS :=             \
 	linters/badtime      \
 	utilities/mockclean  \
 	linters/importorder  \
+	utilities/ggd        \
 
 define TARGET_RULES
 
@@ -16,12 +17,21 @@ setup_$(TARGET):
 	@echo Installing deps for $(TARGET)
 	cd $(TARGET) && glide install -v
 
-.PHONY: $(TARGET)
-$(TARGET): setup_$(TARGET)
-	@which go-junit-report > /dev/null || go get -u github.com/sectioneight/go-junit-report
+.PHONY: test_$(TARGET)
+test_$(TARGET): setup_$(TARGET)
 	@echo Building $(TARGET)
-	cd $(TARGET) && go test -v -race -timeout 5m -covermode atomic -coverprofile $(coverfile) ./... && \
-		$(SELF_DIR)/$(codecov_push) -f $(coverfile)
+	cd $(TARGET) && (                                                                \
+		go test -v -race -timeout 5m -covermode atomic -coverprofile $(coverfile) . && \
+			$(SELF_DIR)/$(codecov_push) -f $(coverfile) &&                               \
+		[ ! -f test.sh ] || ./test.sh                                                  \
+	)
+
+.PHONY: build_$(TARGET)
+build_$(TARGET): setup_$(TARGET)
+	cd $(TARGET) && go build .
+
+.PHONY: $(TARGET)
+$(TARGET): test_$(TARGET) build_$(TARGET)
 
 endef
 
