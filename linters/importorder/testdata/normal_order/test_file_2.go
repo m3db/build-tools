@@ -28,7 +28,7 @@ import (
 	"github.com/m3db/m3coordinator/services/m3coordinator/httpd"
 	"github.com/m3db/m3coordinator/util/logging"
 
-	"github.com/m3db/m3db/client"
+	"github.com/m3db/m3db/src/dbnode/client"
 	xtime "github.com/m3db/m3x/time"
 
 	"github.com/alecthomas/template"

@@ -30,10 +30,10 @@ import (
 	"github.com/m3db/m3coordinator/services/m3coordinator/httpd"
 	"github.com/m3db/m3coordinator/util/logging"
 
-	"github.com/m3db/m3db/client"
+	"github.com/m3db/m3db/src/dbnode/client"
 	xtime "github.com/m3db/m3x/time"
 
-	"github.com/m3db/m3db/digest"
+	"github.com/m3db/m3db/src/dbnode/digest"
 	"go.uber.org/zap"
 	"gopkg.in/alecthomas/kingpin.v2"
 )

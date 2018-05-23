@@ -159,6 +159,9 @@ func compareImports(goldStandard, originalImportDecl importDecl) bool {
 	}
 
 	for i, goldGroup := range goldGroups {
+		if len(goldGroup.Imports) != len(originalGroups[i].Imports) {
+			return false
+		}
 		for j, goldImport := range goldGroup.Imports {
 			if goldImport != originalGroups[i].Imports[j] {
 				return false
