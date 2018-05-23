@@ -42,12 +42,13 @@ func TestImportLinter(t *testing.T) {
 		[]string{"STDLIB", "github.com/m3db/m3coordinator", "github.com/m3db", "EXTERNAL"},
 	)
 
-	require.Equal(t, errOutOfOrder, groupedIntErrors[0].err)
-	require.Equal(t, errMultipleImport, groupedIntErrors[1].err)
-	require.Equal(t, errOutOfOrder, groupedIntErrors[2].err)
-	require.Equal(t, errOutOfOrder, groupedIntErrors[3].err)
-	require.Equal(t, errOutOfOrder, groupedIntErrors[4].err)
-	require.Equal(t, errOutOfOrder, groupedIntErrors[5].err)
+	require.Equal(t, errOutOfOrder, groupedIntErrors[0].err)     // test_file_1.go
+	require.Equal(t, errOutOfOrder, groupedIntErrors[1].err)     // test_file_10.go
+	require.Equal(t, errMultipleImport, groupedIntErrors[2].err) // test_file_2.go
+	require.Equal(t, errOutOfOrder, groupedIntErrors[3].err)     // test_file_3.go
+	require.Equal(t, errOutOfOrder, groupedIntErrors[4].err)     // test_file_4.go
+	require.Equal(t, errOutOfOrder, groupedIntErrors[5].err)     // test_file_6.go
+	require.Equal(t, errOutOfOrder, groupedIntErrors[6].err)     // test_file_8.go
 
 	groupedExtErrors := handleImportPaths(
 		[]string{"./testdata/ext_order/"},

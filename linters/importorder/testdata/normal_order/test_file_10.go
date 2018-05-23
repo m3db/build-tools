@@ -21,30 +21,21 @@
 package testdata
 
 import (
-	"github.com/m3db/m3coordinator/models"
-	"go.uber.org/zap"
-	"gopkg.in/alecthomas/kingpin.v2"
-
-	"github.com/m3db/m3coordinator/services/m3coordinator/config"
-	"github.com/m3db/m3coordinator/services/m3coordinator/httpd"
-	"github.com/m3db/m3coordinator/util/logging"
-
-	"github.com/m3db/m3db/src/dbnode/client"
-	xtime "github.com/m3db/m3x/time"
-
-	"context"
 	"fmt"
-	"time"
+	"sync"
+
+	"github.com/m3db/m3db/src/dbnode/generated/thrift/rpc"
+	"github.com/uber/tchannel-go/thrift"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
-func test6() {
-	fmt.Println("import fmt", time.Now())
-	var _ = config.Configuration{}
-	var _ = models.Tags{}
-	var _ = httpd.Handler{}
-	var _ = logging.WithContext(context.TODO())
-	var _ = client.NewOptions()
-	var _ = xtime.Millisecond
-	var _ = kingpin.Arg("", "")
-	var _ = zap.String("address", "")
+func test10() {
+	var _ = fmt.Sprint("test")
+	var _ = sync.Cond{}
+	var _ = rpc.Block{}
+	var _ = thrift.test
+	var _ = gomock.Controller{}
+	var _ = assert.Assertions{}
 }
