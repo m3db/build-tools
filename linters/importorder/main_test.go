@@ -48,7 +48,7 @@ func TestImportLinter(t *testing.T) {
 	require.Equal(t, errOutOfOrder, groupedIntErrors[3].err)     // test_file_3.go
 	require.Equal(t, errOutOfOrder, groupedIntErrors[4].err)     // test_file_4.go
 	require.Equal(t, errOutOfOrder, groupedIntErrors[5].err)     // test_file_6.go
-	require.Equal(t, errOutOfOrder, groupedIntErrors[6].err)     // test_file_7.go
+	require.Equal(t, errOutOfOrder, groupedIntErrors[6].err)     // test_file_8.go
 
 	groupedExtErrors := handleImportPaths(
 		[]string{"./testdata/ext_order/"},
