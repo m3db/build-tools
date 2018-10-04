@@ -126,9 +126,6 @@ func removeSelfReferrentialImports(src []byte, packageName string) ([]byte, erro
 	}
 	basePkg := file.Name.Name
 
-	fmt.Printf("replacing:\n%s\n\nwith:\n%s\n\n", fmt.Sprintf("%s \"%s\"", basePkg, packageName), "")
-	fmt.Printf("replacing:\n%s\n\nwith:\n%s\n\n", fmt.Sprintf("\"%s\"", packageName), "")
-	fmt.Printf("replacing:\n%s\n\nwith:\n%s\n\n", fmt.Sprintf("%s.", basePkg), "")
 	replacer := strings.NewReplacer(
 		// Replace any self referential imports
 		fmt.Sprintf("%s \"%s\"", basePkg, packageName), "",
