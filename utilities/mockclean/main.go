@@ -132,7 +132,7 @@ func removeSelfReferrentialImports(src []byte, packageName string) ([]byte, erro
 		fmt.Sprintf("\"%s\"", *pkg), "",
 	}
 	for i := 0; i+1 < len(strs); i += 2 {
-		fmt.Printf("replace:\n%s\n\n", strs[i], strs[i+1])
+		fmt.Printf("replace:\n%s\n\n", strs[i])
 	}
 
 	replacer := strings.NewReplacer(
