@@ -129,8 +129,8 @@ func removeSelfReferrentialImports(src []byte, packageName string) ([]byte, erro
 	replacer := strings.NewReplacer(
 		// Replace any self referential imports
 		fmt.Sprintf("%s \"%s\"", basePkg, packageName), "",
-		fmt.Sprintf("%s.", basePkg), "")
-		fmt.Sprintf("\"%s\"", *pkg), "",
+		fmt.Sprintf("%s.", basePkg), "",
+		fmt.Sprintf("\"%s\"", *pkg), "")
 	return []byte(replacer.Replace(string(src))), nil
 }
 
