@@ -45,6 +45,7 @@ const (
 var (
 	errMultipleImport = errors.New("more than one import declaration found")
 	errOutOfOrder     = errors.New("imports are out of order")
+	errDuplicateFound = errors.New("duplicate import found")
 
 	defaultPattern = fmt.Sprintf("%s %s", standardImportGroup, externalImportGroup)
 )
@@ -182,14 +183,20 @@ func getGoldStandard(imports []importDecl, patterns []string) (importDecl, error
 	}
 
 	combinedImports := concatenateImports(imports[0])
-	goldStandard := createGoldStandard(combinedImports, patterns)
+	goldStandard, err := createGoldStandard(combinedImports, patterns)
+	if err != nil {
+		return emptyImportDecl, err
+	}
 
 	return goldStandard, nil
 }
 
-func createGoldStandard(imports []importSpec, patterns []string) importDecl {
+func createGoldStandard(imports []importSpec, patterns []string) (importDecl, error) {
 	groups := make([]importGroup, 0, len(patterns))
-	importMap := convertToMap(imports)
+	importMap, err := convertToMap(imports)
+	if err != nil {
+		return importDecl{}, err
+	}
 
 	for i, pattern := range patterns {
 
@@ -224,7 +231,7 @@ func createGoldStandard(imports []importSpec, patterns []string) importDecl {
 	}
 	return importDecl{
 		Groups: groups,
-	}
+	}, nil
 }
 
 func orderExt(tempGroup []importSpec, imp importSpec, importMap map[importSpec]struct{}, patterns []string, i int) ([]importSpec, bool) {
@@ -251,15 +258,24 @@ func orderStdLib(tempGroup []importSpec, imp importSpec, importMap map[importSpe
 		tempGroup = append(tempGroup, imp)
 		matched = true
 	}
+
 	return tempGroup, matched
 }
 
-func convertToMap(imports []importSpec) map[importSpec]struct{} {
+func convertToMap(imports []importSpec) (map[importSpec]struct{}, error) {
 	importsMap := make(map[importSpec]struct{})
+	dupCheck := make(map[string]struct{})
+
 	for _, imp := range imports {
+		if _, ok := dupCheck[imp.Path]; ok {
+			return nil, errDuplicateFound
+		}
+
+		dupCheck[imp.Path] = struct{}{}
 		importsMap[imp] = struct{}{}
 	}
-	return importsMap
+
+	return importsMap, nil
 }
 
 func concatenateImports(imports importDecl) []importSpec {
