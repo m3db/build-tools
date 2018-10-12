@@ -182,6 +182,11 @@ func reorderImports(src []byte, userPrefixes []string) ([]byte, error) {
 		sort.Sort(importSpecs(im))
 	}
 
+	// don't need to fix imports if we don't have any.
+	if len(standardLibImports) == 0 && len(thirdPartyImports) == 0 && len(userPrefixImports) == 0 {
+		return src, nil
+	}
+
 	// now we can replace all the import statements in the original source with
 	// new single import block and associated decls.
 	removeExistingImports := func(c *astutil.Cursor) bool {
@@ -243,8 +248,13 @@ func reorderImports(src []byte, userPrefixes []string) ([]byte, error) {
 
 	var buf bytes.Buffer
 	format.Node(&buf, fset, cleanedFile)
-	re := regexp.MustCompile("package .*")
+	re := regexp.MustCompilePOSIX("^package .*")
+	first := true
 	cleanedWithImports := re.ReplaceAllStringFunc(buf.String(), func(x string) string {
+		if !first {
+			return x
+		}
+		first = false
 		return fmt.Sprintf("%s\n\n%s", x, newImports)
 	})
 	return []byte(cleanedWithImports), nil
