@@ -6,7 +6,7 @@ test      := .ci/test-cover.sh
 
 TARGETS :=             \
 	linters/badtime      \
-	utilities/mockclean  \
+	utilities/genclean  \
 	linters/importorder  \
 	utilities/ggd        \
 
