@@ -1,4 +1,4 @@
-package: github.com/m3db/build-tools/utilities/mockclean
+package: github.com/m3db/build-tools/utilities/genclean
 import:
 - package: github.com/m3db/m3x
   version: dbdbd564ff2f64388a641ce61f541eceb7d2e416
