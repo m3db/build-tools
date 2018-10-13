@@ -21,8 +21,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -46,25 +48,27 @@ func newTestCase(n int) testCase {
 }
 
 func TestOrderExample(t *testing.T) {
-	testCases := []testCase{
-		newTestCase(1),
-		newTestCase(2),
-		newTestCase(3),
-		newTestCase(4),
+	numTest := 6
+	testCases := []testCase{}
+	for i := 1; i <= numTest; i++ {
+		testCases = append(testCases, newTestCase(i))
 	}
 	for _, tc := range testCases {
-		bytes, err := ioutil.ReadFile(tc.input)
+		inputBytes, err := ioutil.ReadFile(tc.input)
 		require.NoError(t, err, "", tc)
 
-		expected, err := ioutil.ReadFile(tc.output)
+		expFile, err := os.Open(tc.output)
+		require.NoError(t, err)
+		expected, err := ioutil.ReadAll(expFile)
 		require.NoError(t, err, "", tc)
 
-		obs, err := reorderImports(bytes, strings.Fields(defaultGroupPrefixes))
+		obs, err := reorderImports(inputBytes, strings.Fields(defaultGroupPrefixes))
 		require.NoError(t, err)
 
-		e := strings.Trim(string(expected), " \t\n")
-		o := strings.Trim(string(obs), " \n\t")
-		require.True(t, e == o,
-			fmt.Sprintf("expected: [%s]\n observed: [%s]\n", e, o), tc)
+		if !bytes.Equal(expected, obs) {
+			e := string(expected)
+			o := string(obs)
+			require.Fail(t, fmt.Sprintf("[%v] did not match: \ne:[%v]\no:[%v]", tc, e, o))
+		}
 	}
 }
